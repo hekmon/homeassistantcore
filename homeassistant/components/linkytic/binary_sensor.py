@@ -14,8 +14,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 
-# from .const import SERIAL_READER
-
+from .const import SETUP_SERIAL  # SERIAL_READER
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -40,5 +39,5 @@ async def async_setup_entry(
 ) -> None:
     """Set up entry."""
     _LOGGER.info("Setting up binary sensor entry for %s", config_entry.title)
-    _LOGGER.info("Config entry data: %s", config_entry.data.get("serial_device"))
+    _LOGGER.info("Config entry data: %s", config_entry.data.get(SETUP_SERIAL))
     _LOGGER.warning("Config entry data: %s", config_entry.options.items())

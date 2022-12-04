@@ -15,23 +15,38 @@ from homeassistant.data_entry_flow import FlowResult
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import selector
 
-from .const import DOMAIN
+from .const import (
+    DOMAIN,
+    OPTIONS_REALTIME,
+    SETUP_SERIAL,
+    SETUP_SERIAL_DEFAULT,
+    SETUP_THREEPHASE,
+    SETUP_THREEPHASE_DEFAULT,
+    SETUP_TICMODE,
+    TICMODE_HISTORIC,
+    TICMODE_HISTORIC_LABEL,
+    TICMODE_STANDARD,
+    TICMODE_STANDARD_LABEL,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
-
-TIC_MODES = [
-    selector.SelectOptionDict(value="hist", label="Historique"),
-    selector.SelectOptionDict(value="std", label="Standard"),
-]
-
 STEP_USER_DATA_SCHEMA = vol.Schema(
     {
-        vol.Required("serial_device", default="/dev/ttyUSB1"): str,
-        vol.Required("tic_mode", default="hist"): selector.SelectSelector(
-            selector.SelectSelectorConfig(options=TIC_MODES),
+        vol.Required(SETUP_SERIAL, default=SETUP_SERIAL_DEFAULT): str,
+        vol.Required(SETUP_TICMODE, default=TICMODE_HISTORIC): selector.SelectSelector(
+            selector.SelectSelectorConfig(
+                options=[
+                    selector.SelectOptionDict(
+                        value=TICMODE_HISTORIC, label=TICMODE_HISTORIC_LABEL
+                    ),
+                    selector.SelectOptionDict(
+                        value=TICMODE_STANDARD, label=TICMODE_STANDARD_LABEL
+                    ),
+                ]
+            ),
         ),
-        vol.Required("three_phase", default=False): bool,
+        vol.Required(SETUP_THREEPHASE, default=SETUP_THREEPHASE_DEFAULT): bool,
     }
 )
 
@@ -50,13 +65,12 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return self.async_show_form(
                 step_id="user", data_schema=STEP_USER_DATA_SCHEMA
             )
-        # Input provided
-        await self.async_set_unique_id(DOMAIN + "_" + user_input["serial_device"])
+        # Validate input
+        await self.async_set_unique_id(DOMAIN + "_" + user_input[SETUP_SERIAL])
         self._abort_if_unique_id_configured()
-        # Try to connect
         errors = {}
         try:
-            info = await validate_input(self.hass, user_input)
+            config_title = await validate_input(self.hass, user_input)
         except StandardUnsupported:
             errors["base"] = "unsupported_standard"
         except CannotConnect:
@@ -65,7 +79,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             _LOGGER.exception("Unexpected exception")
             errors["base"] = "unknown"
         else:
-            return self.async_create_entry(title=info["title"], data=user_input)
+            return self.async_create_entry(title=config_title, data=user_input)
 
         return self.async_show_form(
             step_id="user", data_schema=STEP_USER_DATA_SCHEMA, errors=errors
@@ -111,28 +125,29 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             data_schema=vol.Schema(
                 {
                     vol.Required(
-                        "real_time", default=self.config_entry.options.get("real_time")
+                        OPTIONS_REALTIME,
+                        default=self.config_entry.options.get(OPTIONS_REALTIME),
                     ): bool
                 }
             ),
         )
 
 
-async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str, Any]:
+async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> str:
     """Validate the user input allows us to connect.
 
     Data has the keys from STEP_USER_DATA_SCHEMA with values provided by the user.
     """
-    if data["tic_mode"] == "std":
+    if data[SETUP_TICMODE] == TICMODE_STANDARD:
         raise StandardUnsupported
 
-    hub = PlaceholderHub(data["serial_device"])
+    hub = PlaceholderHub(data[SETUP_SERIAL])
 
     if not await hub.connect():
         raise CannotConnect
 
     # Return info that you want to store in the config entry.
-    return {"title": "Linky TIC on {}".format(data["serial_device"])}
+    return f"Linky TIC on {data[SETUP_SERIAL]}"
 
 
 class PlaceholderHub:
