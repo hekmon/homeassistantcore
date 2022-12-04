@@ -36,38 +36,6 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
 )
 
 
-class PlaceholderHub:
-    """Placeholder class to make tests pass.
-
-    TODO Remove this placeholder class and replace with things from your PyPI package.
-    """
-
-    def __init__(self, device: str) -> None:
-        """Initialize."""
-        self.device = device
-
-    async def connect(self) -> bool:
-        """Test if we can authenticate with the device."""
-        return True
-
-
-async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str, Any]:
-    """Validate the user input allows us to connect.
-
-    Data has the keys from STEP_USER_DATA_SCHEMA with values provided by the user.
-    """
-    if data["tic_mode"] == "std":
-        raise StandardUnsupported
-
-    hub = PlaceholderHub(data["serial_device"])
-
-    if not await hub.connect():
-        raise CannotConnect
-
-    # Return info that you want to store in the config entry.
-    return {"title": "Linky TIC on {}".format(data["serial_device"])}
-
-
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for linkytic."""
 
@@ -83,9 +51,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 step_id="user", data_schema=STEP_USER_DATA_SCHEMA
             )
         # Input provided
-        await self.async_set_unique_id(user_input["serial_device"])
+        await self.async_set_unique_id(DOMAIN + "_" + user_input["serial_device"])
         self._abort_if_unique_id_configured()
-
+        # Try to connect
         errors = {}
         try:
             info = await validate_input(self.hass, user_input)
@@ -148,3 +116,35 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 }
             ),
         )
+
+
+async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str, Any]:
+    """Validate the user input allows us to connect.
+
+    Data has the keys from STEP_USER_DATA_SCHEMA with values provided by the user.
+    """
+    if data["tic_mode"] == "std":
+        raise StandardUnsupported
+
+    hub = PlaceholderHub(data["serial_device"])
+
+    if not await hub.connect():
+        raise CannotConnect
+
+    # Return info that you want to store in the config entry.
+    return {"title": "Linky TIC on {}".format(data["serial_device"])}
+
+
+class PlaceholderHub:
+    """Placeholder class to make tests pass.
+
+    TODO Remove this placeholder class and replace with things from your PyPI package.
+    """
+
+    def __init__(self, device: str) -> None:
+        """Initialize."""
+        self.device = device
+
+    async def connect(self) -> bool:
+        """Test if we can authenticate with the device."""
+        return True
