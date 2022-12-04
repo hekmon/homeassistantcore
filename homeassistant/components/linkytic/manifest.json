@@ -1,0 +1,13 @@
+{
+  "domain": "linkytic",
+  "name": "Linky TIC",
+  "config_flow": true,
+  "documentation": "https://www.home-assistant.io/integrations/linkytic",
+  "requirements": [],
+  "ssdp": [],
+  "zeroconf": [],
+  "homekit": {},
+  "dependencies": [],
+  "codeowners": ["@hekmon"],
+  "iot_class": "local_polling"
+}

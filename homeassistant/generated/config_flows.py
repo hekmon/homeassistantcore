@@ -236,6 +236,7 @@ FLOWS = {
         "lidarr",
         "life360",
         "lifx",
+        "linkytic",
         "litejet",
         "litterrobot",
         "livisi",

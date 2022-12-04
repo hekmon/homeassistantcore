@@ -1,0 +1,25 @@
+{
+    "config": {
+        "abort": {
+            "already_configured": "Device is already configured"
+        },
+        "error": {
+            "cannot_connect": "Failed to connect",
+            "invalid_auth": "Invalid authentication",
+            "unknown": "Unexpected error",
+            "unsupported_standard": "The standard TIC mode is not supported yet, if you want to help development feel free to open an issue: https://github.com/hekmon/lixeeticdin/issues/new"
+        },
+        "flow_title": "Config flow title [unseen]",
+        "step": {
+            "user": {
+                "data": {
+                    "serial_device": "Path to the serial device",
+                    "three_phase": "Three Phase",
+                    "tic_mode": "TIC mode"
+                },
+                "description": "If you need help to fill this form, please check the [readme](https://github.com/hekmon/lixeeticdin).",
+                "title": "Linky Serial TIC"
+            }
+        }
+    }
+}
