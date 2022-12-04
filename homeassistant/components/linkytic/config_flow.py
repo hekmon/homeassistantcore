@@ -1,13 +1,16 @@
 """Config flow for linkytic integration."""
 from __future__ import annotations
 
+# import dataclasses
 import logging
 from typing import Any
 
 import voluptuous as vol
 
 from homeassistant import config_entries
-from homeassistant.core import HomeAssistant
+
+# from homeassistant.components.usb import UsbServiceInfo
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import selector
@@ -24,7 +27,7 @@ TIC_MODES = [
 
 STEP_USER_DATA_SCHEMA = vol.Schema(
     {
-        vol.Required("serial_device", default="/dev/ttyUSB0"): str,
+        vol.Required("serial_device", default="/dev/ttyUSB1"): str,
         vol.Required("tic_mode", default="hist"): selector.SelectSelector(
             selector.SelectSelectorConfig(options=TIC_MODES),
         ),
@@ -74,13 +77,16 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Handle the initial step."""
+        # No input
         if user_input is None:
             return self.async_show_form(
                 step_id="user", data_schema=STEP_USER_DATA_SCHEMA
             )
+        # Input provided
+        await self.async_set_unique_id(user_input["serial_device"])
+        self._abort_if_unique_id_configured()
 
         errors = {}
-
         try:
             info = await validate_input(self.hass, user_input)
         except StandardUnsupported:
@@ -97,6 +103,18 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="user", data_schema=STEP_USER_DATA_SCHEMA, errors=errors
         )
 
+    # async def async_step_usb(self, discovery_info: UsbServiceInfo) -> FlowResult:
+    #     """Handle a flow initialized by USB discovery."""
+    #     return await self.async_step_discovery(dataclasses.asdict(discovery_info))
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(
+        config_entry: config_entries.ConfigEntry,
+    ) -> config_entries.OptionsFlow:
+        """Create the options flow."""
+        return OptionsFlowHandler(config_entry)
+
 
 class CannotConnect(HomeAssistantError):
     """Error to indicate we cannot connect."""
@@ -104,3 +122,29 @@ class CannotConnect(HomeAssistantError):
 
 class StandardUnsupported(HomeAssistantError):
     """Error to indicate that the user choose the unsupported standard TIC mode."""
+
+
+class OptionsFlowHandler(config_entries.OptionsFlow):
+    """Handles the options of a Linky TIC connection."""
+
+    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
+        """Initialize options flow."""
+        self.config_entry = config_entry
+
+    async def async_step_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Manage the options."""
+        if user_input is not None:
+            return self.async_create_entry(title="", data=user_input)
+
+        return self.async_show_form(
+            step_id="init",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(
+                        "real_time", default=self.config_entry.options.get("real_time")
+                    ): bool
+                }
+            ),
+        )

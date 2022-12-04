@@ -1,25 +1,34 @@
 {
   "config": {
-    "flow_title": "Config flow title [unseen]",
     "step": {
       "user": {
-        "title": "Linky Serial TIC",
         "description": "If you need help to fill this form, please check the [readme](https://github.com/hekmon/lixeeticdin).",
         "data": {
           "serial_device": "Path to the serial device",
           "tic_mode": "TIC mode",
-          "three_phase": "Three Phase"
+          "three_phase": "Three-Phase"
         }
       }
     },
     "error": {
-      "unsupported_standard": "The standard TIC mode is not supported yet, if you want to help development feel free to open an issue: https://github.com/hekmon/lixeeticdin/issues/new",
+      "unsupported_standard": "The standard TIC mode is not supported yet. If you want to help development, feel free to open an issue: https://github.com/hekmon/lixeeticdin/issues/new",
       "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
       "invalid_auth": "[%key:common::config_flow::error::invalid_auth%]",
       "unknown": "[%key:common::config_flow::error::unknown%]"
     },
     "abort": {
       "already_configured": "[%key:common::config_flow::abort::already_configured_device%]"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Linky TIC - Options",
+        "description": "⚠️ This can be pretty heavy on Home Assistant, expect CPU usage and database size to increase !",
+        "data": {
+          "real_time": "Real time mode for supported sensors"
+        }
+      }
     }
   }
 }

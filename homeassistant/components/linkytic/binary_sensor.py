@@ -41,3 +41,4 @@ async def async_setup_entry(
     """Set up entry."""
     _LOGGER.info("Setting up binary sensor entry for %s", config_entry.title)
     _LOGGER.info("Config entry data: %s", config_entry.data.get("serial_device"))
+    _LOGGER.warning("Config entry data: %s", config_entry.options.items())
