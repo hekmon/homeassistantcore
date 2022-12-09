@@ -56,7 +56,7 @@ async def update_listener(hass: HomeAssistant, entry: ConfigEntry):
         serial_reader = hass.data[DOMAIN][entry.entry_id]
     except KeyError:
         _LOGGER.error(
-            "Can not update options for %s: failed to get the serial reader",
+            "Can not update options for %s: failed to get the serial reader object",
             entry.title,
         )
         return
