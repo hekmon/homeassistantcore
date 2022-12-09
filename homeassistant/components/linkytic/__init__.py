@@ -1,19 +1,14 @@
 """The linkytic integration."""
 from __future__ import annotations
 
-import logging
-import threading
-import time
-
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EVENT_HOMEASSISTANT_STOP, Platform
 from homeassistant.core import HomeAssistant
 
 from .const import DOMAIN
+from .reader import LinkyTICReader
 
 PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR]
-
-_LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -40,24 +35,3 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         hass.data[DOMAIN].pop(entry.entry_id)
 
     return unload_ok
-
-
-class LinkyTICReader(threading.Thread):
-    """Implements the reading of a serial Linky TIC."""
-
-    def __init__(self, name):
-        """Init the LinkyTIC thread serial reader."""
-        self._stopsignal = False
-        super().__init__(name=name)
-
-    def run(self):
-        """Continuously read the the serial connection and extract TIC values."""
-        while not self._stopsignal:
-            _LOGGER.info("Ticking")
-            time.sleep(3)
-        _LOGGER.warning("Serial reading stopped")
-
-    def stop(self, event):
-        """Activate the stop flag in order to stop the thread from within."""
-        _LOGGER.warning("Stopping %s (received %s)", self._name, event)
-        self._stopsignal = True

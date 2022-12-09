@@ -38,6 +38,11 @@ async def async_setup_entry(
     async_add_devices: AddEntitiesCallback,
 ) -> None:
     """Set up entry."""
-    _LOGGER.info("Setting up binary sensor entry for %s", config_entry.title)
-    _LOGGER.info("Config entry data: %s", config_entry.data.get(SETUP_SERIAL))
-    _LOGGER.warning("Config entry data: %s", config_entry.options.items())
+    _LOGGER.info(
+        "%s: config entry data: %s",
+        config_entry.title,
+        config_entry.data.get(SETUP_SERIAL),
+    )
+    _LOGGER.warning(
+        "%s: config entry data: %s", config_entry.title, config_entry.options.items()
+    )
