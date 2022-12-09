@@ -1,22 +1,28 @@
 """The linkytic integration."""
 from __future__ import annotations
 
+import logging
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EVENT_HOMEASSISTANT_STOP, Platform
 from homeassistant.core import HomeAssistant
 
-from .const import DOMAIN
+from .const import DOMAIN, OPTIONS_REALTIME
 from .reader import LinkyTICReader
 
 PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR]
+
+_LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up linkytic from a config entry."""
     # Create the serial reader thread and start it
-    serial_reader = LinkyTICReader(entry.title)
+    serial_reader = LinkyTICReader(entry.title, entry.options.get(OPTIONS_REALTIME))
     serial_reader.start()
     hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, serial_reader.stop)
+    # Add options callback
+    entry.async_on_unload(entry.add_update_listener(update_listener))
     # Add the serial reader to HA and initialize sensors
     try:
         hass.data[DOMAIN][entry.entry_id] = serial_reader
@@ -35,3 +41,19 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         hass.data[DOMAIN].pop(entry.entry_id)
 
     return unload_ok
+
+
+async def update_listener(hass: HomeAssistant, entry: ConfigEntry):
+    """Handle options update."""
+    _LOGGER.warning("Update listener")
+    # Retrieved the serial reader for this config entry
+    try:
+        serial_reader = hass.data[DOMAIN][entry.entry_id]
+    except KeyError:
+        _LOGGER.error(
+            "Can not update options for %s: failed to get the serial reader",
+            entry.title,
+        )
+        return
+    # Update its options
+    serial_reader.update_options(entry.options.get(OPTIONS_REALTIME))
