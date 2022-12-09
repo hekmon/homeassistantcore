@@ -7,7 +7,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EVENT_HOMEASSISTANT_STOP, Platform
 from homeassistant.core import HomeAssistant
 
-from .const import DOMAIN, OPTIONS_REALTIME
+from .const import DOMAIN, OPTIONS_REALTIME, SETUP_SERIAL, TICMODE_HISTORIC
 from .reader import LinkyTICReader
 
 PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR]
@@ -18,9 +18,14 @@ _LOGGER = logging.getLogger(__name__)
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up linkytic from a config entry."""
     # Create the serial reader thread and start it
-    serial_reader = LinkyTICReader(entry.title, entry.options.get(OPTIONS_REALTIME))
+    serial_reader = LinkyTICReader(
+        title=entry.title,
+        port=entry.data.get(SETUP_SERIAL),
+        std_mode=entry.data.get(TICMODE_HISTORIC),
+        real_time=entry.options.get(OPTIONS_REALTIME),
+    )
     serial_reader.start()
-    hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, serial_reader.stop)
+    hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, serial_reader.signalstop)
     # Add options callback
     entry.async_on_unload(entry.add_update_listener(update_listener))
     # Add the serial reader to HA and initialize sensors
