@@ -27,12 +27,20 @@ async def async_setup_platform(
     discovery_info: DiscoveryInfoType | None,
 ) -> None:
     """Set up the Linky TIC binary sensor platform."""
-    _LOGGER.debug("setting up binary sensor plateform (legacy)")
+    _LOGGER.debug("YAML config: setting up binary sensor plateform")
     # Init sensors
     if discovery_info:
         async_add_entities(
-            [SerialConnectivity("legacy", "legacy", discovery_info[SERIAL_READER])],
+            [
+                SerialConnectivity(
+                    "YAML config", "legacy", discovery_info[SERIAL_READER]
+                )
+            ],
             True,
+        )
+    else:
+        _LOGGER.error(
+            "YAML config: can not init binary sensor plateform with empty discovery info"
         )
 
 
@@ -75,7 +83,7 @@ class SerialConnectivity(BinarySensorEntity):
 
     def __init__(self, title: str, uniqid: str, serial_reader: LinkyTICReader) -> None:
         """Initialize the SerialConnectivity binary sensor."""
-        _LOGGER.debug("%s initializing SerialConnectivity binary sensor", title)
+        _LOGGER.debug("%s: initializing Serial Connectivity binary sensor", title)
         self._title = title
         self._attr_unique_id = "linky_serial_connectivity__" + uniqid
         self._serial_controller = serial_reader
