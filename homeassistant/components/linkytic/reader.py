@@ -6,6 +6,7 @@ import threading
 import time
 
 import serial
+import serial.serialutil
 
 from homeassistant.core import callback
 
@@ -46,7 +47,6 @@ class LinkyTICReader(threading.Thread):
         self._std_mode = std_mode
         # Run
         self._reader: serial.Serial | None = None
-        self._stop = False
         self._first_line = True
         self._values: dict[str, dict[str, str | None]] = {}
         self._frames_read = -1  # we consider that the first frame will be incomplete
@@ -75,7 +75,7 @@ class LinkyTICReader(threading.Thread):
             else:
                 self._parse_line(line)
         # Stop flag as been activated
-        _LOGGER.info("Serial reader thread stopping: closing the serial connection")
+        _LOGGER.info("Thread stop: closing the serial connection")
         if self._reader:
             self._reader.close()
 
@@ -122,9 +122,9 @@ class LinkyTICReader(threading.Thread):
                 timeout=1,
             )
             _LOGGER.info("Serial connection is now open")
-        except serial.SerialException as exc:
-            _LOGGER.exception(
-                "Unable to connect to the serial device %s: %s. Will retry in 5s",
+        except serial.serialutil.SerialException as exc:
+            _LOGGER.error(
+                "Unable to connect to the serial device %s: %s",
                 self._port,
                 exc,
             )
@@ -132,12 +132,12 @@ class LinkyTICReader(threading.Thread):
 
     def _reset_state(self):
         """Reinitialize the controller (by nullifying it) and wait 5s for other methods to re start init after a pause."""
-        _LOGGER.info("Resetting serial reader state and wait 5s")
+        _LOGGER.debug("Resetting serial reader state and wait 10s")
         self._reader = None
         self._first_line = True
         self._values = {}
         self._frames_read = -1
-        time.sleep(5)
+        time.sleep(10)
 
     def _parse_line(self, line):
         """Parse a line when a full line has been read from serial. It parses it as Linky TIC infos, validate its checksum and save internally the line infos."""
@@ -245,7 +245,7 @@ class InvalidChecksum(Exception):
         computed: int,
         expected: bytes,
     ) -> None:
-        """Initialize the checksum exception constructor."""
+        """Initialize the checksum exception."""
         self.tag = tag.decode("ascii")
         self.timestamp = timestamp.decode("ascii") if timestamp else None
         self.value = value.decode("ascii")

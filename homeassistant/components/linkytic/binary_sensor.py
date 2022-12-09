@@ -19,6 +19,23 @@ from .reader import LinkyTICReader
 _LOGGER = logging.getLogger(__name__)
 
 
+# legacy setup via YAML
+async def async_setup_platform(
+    hass: HomeAssistant,
+    config: ConfigType,
+    async_add_entities: AddEntitiesCallback,
+    discovery_info: DiscoveryInfoType | None,
+) -> None:
+    """Set up the Linky TIC binary sensor platform."""
+    _LOGGER.debug("setting up binary sensor plateform (legacy)")
+    # Init sensors
+    if discovery_info:
+        async_add_entities(
+            [SerialConnectivity("legacy", "legacy", discovery_info[SERIAL_READER])],
+            True,
+        )
+
+
 # config flow setup
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -37,21 +54,10 @@ async def async_setup_entry(
         )
         return
     # Init sensors
-    async_add_devices([SerialConnectivity(serial_reader)], True)
-
-
-# legacy setup via YAML
-async def async_setup_platform(
-    hass: HomeAssistant,
-    config: ConfigType,
-    async_add_entities: AddEntitiesCallback,
-    discovery_info: DiscoveryInfoType | None,
-) -> None:
-    """Set up the Linky TIC binary sensor platform."""
-    _LOGGER.debug("setting up binary sensor plateform (legacy)")
-    # Init sensors
-    if discovery_info:
-        async_add_entities([SerialConnectivity(discovery_info[SERIAL_READER])], True)
+    async_add_devices(
+        [SerialConnectivity(config_entry.title, config_entry.entry_id, serial_reader)],
+        True,
+    )
 
 
 class SerialConnectivity(BinarySensorEntity):
@@ -62,15 +68,16 @@ class SerialConnectivity(BinarySensorEntity):
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_name = "Linky - Connectivité du lien série"
     _attr_should_poll = True
-    _attr_unique_id = "linky_serial_connectivity"
 
     # Binary sensor properties
     #   https://developers.home-assistant.io/docs/core/entity/binary-sensor/#properties
     _attr_device_class = BinarySensorDeviceClass.CONNECTIVITY
 
-    def __init__(self, serial_reader: LinkyTICReader) -> None:
+    def __init__(self, title: str, uniqid: str, serial_reader: LinkyTICReader) -> None:
         """Initialize the SerialConnectivity binary sensor."""
-        _LOGGER.debug("initializing SerialConnectivity binary sensor")
+        _LOGGER.debug("%s initializing SerialConnectivity binary sensor", title)
+        self._title = title
+        self._attr_unique_id = "linky_serial_connectivity__" + uniqid
         self._serial_controller = serial_reader
 
     @property

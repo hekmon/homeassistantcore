@@ -15,6 +15,7 @@ PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR]
 _LOGGER = logging.getLogger(__name__)
 
 
+# config flow setup
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up linkytic from a config entry."""
     # Create the serial reader thread and start it
