@@ -63,8 +63,6 @@ class LinkyTICReader(threading.Thread):
             # Now that we have a connection, read its output
             try:
                 line = self._reader.readline()
-                if FRAME_END in line:
-                    self._frames_read += 1
             except serial.SerialException as exc:
                 _LOGGER.exception(
                     "Error while reading serial device %s: %s. Will retry in 5s",
@@ -73,7 +71,11 @@ class LinkyTICReader(threading.Thread):
                 )
                 self._reset_state()
             else:
-                self._parse_line(line)
+                tag = self._parse_line(line)
+                if FRAME_END in line:
+                    self._frames_read += 1
+                    if tag is not None:
+                        _LOGGER.debug("End of frame, last tag read: %s", tag)
         # Stop flag as been activated
         _LOGGER.info("Thread stop: closing the serial connection")
         if self._reader:
@@ -139,13 +141,13 @@ class LinkyTICReader(threading.Thread):
         self._frames_read = -1
         time.sleep(10)
 
-    def _parse_line(self, line):
+    def _parse_line(self, line) -> str | None:
         """Parse a line when a full line has been read from serial. It parses it as Linky TIC infos, validate its checksum and save internally the line infos."""
         # there is a great chance that the first line is a partial line: skip it
         if self._first_line:
             _LOGGER.debug("skipping first line: %s", repr(line))
             self._first_line = False
-            return
+            return None
         # if not, it should be complete: parse it !
         _LOGGER.debug("line to parse: %s", repr(line))
         # cleanup the line
@@ -169,7 +171,7 @@ class LinkyTICReader(threading.Thread):
                     len(fields),
                     repr(line),
                 )
-                return
+                return None
         else:
             fields = line.split(MODE_HISTORIC_FIELD_SEPARATOR)
             if len(fields) == 3:
@@ -187,7 +189,7 @@ class LinkyTICReader(threading.Thread):
                     len(fields),
                     repr(line),
                 )
-                return
+                return None
         # validate the checksum
         try:
             self._validate_checksum(tag, timestamp, field_value, checksum)
@@ -197,14 +199,15 @@ class LinkyTICReader(threading.Thread):
                 repr(line),
                 invalid_checksum,
             )
-            return
+            return None
         _LOGGER.debug("line checksum is valid")
         # transform and store the values
         payload: dict[str, str | None] = {"value": field_value.decode("ascii")}
-        payload["timestamp"] = timestamp.decode("ascii") if timestamp else timestamp
+        payload["timestamp"] = timestamp.decode("ascii") if timestamp else None
         tag = tag.decode("ascii")
         self._values[tag] = payload
         _LOGGER.debug("read the following values: %s -> %s", tag, repr(payload))
+        return tag
 
     def _validate_checksum(
         self, tag: bytes, timestamp: bytes | None, value: bytes, checksum: bytes
