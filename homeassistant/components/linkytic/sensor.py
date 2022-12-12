@@ -51,7 +51,7 @@ async def async_setup_platform(
         return
     await async_init(
         "YAML config",
-        "legacy",
+        None,
         discovery_info[CONF_STANDARD_MODE],
         discovery_info[CONF_THREE_PHASE],
         serial_reader,
@@ -90,7 +90,7 @@ async def async_setup_entry(
 # factorized init
 async def async_init(
     title: str,
-    uniq_id: str,
+    uniq_id: str | None,
     std_mode: bool,
     three_phase: bool,
     serial_reader: LinkyTICReader,
@@ -322,11 +322,15 @@ class ADCOSensor(SensorEntity):
     _attr_unique_id = "linky_adco"
     _attr_icon = "mdi:tag"
 
-    def __init__(self, title: str, uniq_id: str, serial_reader: LinkyTICReader) -> None:
+    def __init__(
+        self, title: str, uniq_id: str | None, serial_reader: LinkyTICReader
+    ) -> None:
         """Initialize an ADCO Sensor."""
         _LOGGER.debug("%s: initializing ADCO sensor", title)
         self._title = title
-        self._attr_unique_id = "linky_adco__" + uniq_id
+        self._attr_unique_id = (
+            "linky_adco" if uniq_id is None else "linky_adco__" + uniq_id
+        )
         self._serial_controller = serial_reader
         self._tag = "ADCO"
 
@@ -453,7 +457,7 @@ class RegularStrSensor(SensorEntity):
     def __init__(
         self,
         title: str,
-        uniq_id: str,
+        uniq_id: str | None,
         serial_reader: LinkyTICReader,
         tag: str,
         name: str,
@@ -470,7 +474,11 @@ class RegularStrSensor(SensorEntity):
         if category:
             self._attr_entity_category = category
         self._attr_name = f"Linky - {name}"
-        self._attr_unique_id = f"linky_{tag.lower()}__{uniq_id}"
+        self._attr_unique_id = (
+            f"linky_{tag.lower()}"
+            if uniq_id is None
+            else f"linky_{tag.lower()}__{uniq_id}"
+        )
         if icon:
             self._attr_icon = icon
         self._attr_entity_registry_enabled_default = enabled_by_default
@@ -520,7 +528,7 @@ class RegularIntSensor(SensorEntity):
     def __init__(
         self,
         title: str,
-        uniq_id: str,
+        uniq_id: str | None,
         serial_reader: LinkyTICReader,
         tag: str,
         name: str,
@@ -539,7 +547,11 @@ class RegularIntSensor(SensorEntity):
         if category:
             self._attr_entity_category = category
         self._attr_name = f"Linky - {name}"
-        self._attr_unique_id = f"linky_{tag.lower()}__{uniq_id}"
+        self._attr_unique_id = (
+            f"linky_{tag.lower()}"
+            if uniq_id is None
+            else f"linky_{tag.lower()}__{uniq_id}"
+        )
         if icon:
             self._attr_icon = icon
         # Sensor Entity Properties
@@ -594,7 +606,7 @@ class EnergyIndexSensor(RegularIntSensor):
     def __init__(
         self,
         title: str,
-        uniq_id: str,
+        uniq_id: str | None,
         serial_reader: LinkyTICReader,
         tag: str,
         name: str,
@@ -628,13 +640,17 @@ class PEJPSensor(SensorEntity):
     _attr_unique_id = "linky_pejp"
     _attr_icon = "mdi:clock-start"
 
-    def __init__(self, title: str, uniq_id: str, serial_reader: LinkyTICReader) -> None:
+    def __init__(
+        self, title: str, uniq_id: str | None, serial_reader: LinkyTICReader
+    ) -> None:
         """Initialize a PEJP sensor."""
         _LOGGER.debug("%s: initializing PEJP sensor", title)
         self._title = title
         self._serial_controller = serial_reader
         self._tag = "PEJP"
-        self._attr_unique_id = "linky_pejp__" + uniq_id
+        self._attr_unique_id = (
+            "linky_pejp" if uniq_id is None else "linky_pejp__" + uniq_id
+        )
 
     @property
     def native_value(self) -> str | None:

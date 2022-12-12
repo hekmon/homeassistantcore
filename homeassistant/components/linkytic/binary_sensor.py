@@ -31,11 +31,7 @@ async def async_setup_platform(
     # Init sensors
     if discovery_info:
         async_add_entities(
-            [
-                SerialConnectivity(
-                    "YAML config", "legacy", discovery_info[SERIAL_READER]
-                )
-            ],
+            [SerialConnectivity("YAML config", None, discovery_info[SERIAL_READER])],
             True,
         )
     else:
@@ -81,11 +77,17 @@ class SerialConnectivity(BinarySensorEntity):
     #   https://developers.home-assistant.io/docs/core/entity/binary-sensor/#properties
     _attr_device_class = BinarySensorDeviceClass.CONNECTIVITY
 
-    def __init__(self, title: str, uniqid: str, serial_reader: LinkyTICReader) -> None:
+    def __init__(
+        self, title: str, uniq_id: str | None, serial_reader: LinkyTICReader
+    ) -> None:
         """Initialize the SerialConnectivity binary sensor."""
         _LOGGER.debug("%s: initializing Serial Connectivity binary sensor", title)
         self._title = title
-        self._attr_unique_id = "linky_serial_connectivity__" + uniqid
+        self._attr_unique_id = (
+            "linky_serial_connectivity"
+            if uniq_id is None
+            else "linky_serial_connectivity__" + uniq_id
+        )
         self._serial_controller = serial_reader
 
     @property
