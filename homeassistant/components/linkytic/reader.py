@@ -9,6 +9,7 @@ import serial
 import serial.serialutil
 
 from homeassistant.core import callback
+from homeassistant.exceptions import HomeAssistantError
 
 from .const import (
     BYTESIZE,
@@ -53,6 +54,26 @@ class LinkyTICReader(threading.Thread):
         # Init parent thread class
         super().__init__(name=title)
 
+    def get_values(self, tag) -> tuple[str | None, str | None]:
+        """Get tag value and timestamp from the thread memory cache."""
+        if not self.is_connected:
+            return None, None
+        try:
+            payload = self._values[tag]
+            return payload["value"], payload["timestamp"]
+        except KeyError:
+            return None, None
+
+    def has_read_full_frame(self) -> bool:
+        """Use to known if at least one complete frame has been read on the serial connection."""
+        return self._frames_read >= 1
+
+    def is_connected(self) -> bool:
+        """Use to know if the reader is actually connected to a serial connection."""
+        if self._reader is None:
+            return False
+        return self._reader.is_open
+
     def run(self):
         """Continuously read the the serial connection and extract TIC values."""
         while not self._stopsignal:
@@ -91,26 +112,6 @@ class LinkyTICReader(threading.Thread):
         """Setter to update serial reader options."""
         _LOGGER.warning("%s: new real time option value: %s", self._title, real_time)
         self._realtime = real_time
-
-    def is_connected(self) -> bool:
-        """Use to know if the reader is actually connected to a serial connection."""
-        if self._reader is None:
-            return False
-        return self._reader.is_open
-
-    def has_read_full_frame(self) -> bool:
-        """Use to known if at least one complete frame has been read on the serial connection."""
-        return self._frames_read >= 1
-
-    def get_values(self, tag) -> tuple[str | None, str | None]:
-        """Get tag value and timestamp from the thread memory cache."""
-        if not self.is_connected:
-            return None, None
-        try:
-            payload = self._values[tag]
-            return payload["value"], payload["timestamp"]
-        except KeyError:
-            return None, None
 
     def _open_serial(self):
         """Create (and open) the serial connection."""
@@ -276,3 +277,37 @@ class InvalidChecksum(Exception):
             bin(int.from_bytes(self.expected, byteorder="big")),
             chr(ord(self.expected)),
         )
+
+
+def linky_tic_tester(device: str, std_mode: bool) -> None:
+    """Before starting the thread, this method can help validate configuration by opening the serial communication and read a line. It returns None if everything went well or a string describing the error."""
+    # Open connection
+    try:
+        serial_reader = serial.Serial(
+            port=device,
+            baudrate=MODE_STANDARD_BAUD_RATE if std_mode else MODE_HISTORIC_BAUD_RATE,
+            bytesize=BYTESIZE,
+            parity=PARITY,
+            stopbits=STOPBITS,
+            timeout=1,
+        )
+    except serial.serialutil.SerialException as exc:
+        raise CannotConnect(
+            f"Unable to connect to the serial device {device}: {exc}"
+        ) from exc
+    # Try to read a line
+    try:
+        serial_reader.readline()
+    except serial.serialutil.SerialException as exc:
+        serial_reader.close()
+        raise CannotRead(f"Failed to read a line: {exc}") from exc
+    # All good
+    serial_reader.close()
+
+
+class CannotConnect(HomeAssistantError):
+    """Error to indicate we cannot connect."""
+
+
+class CannotRead(HomeAssistantError):
+    """Error to indicate that the serial connection was open successfully but an error occurred while reading a line."""

@@ -10,9 +10,8 @@ import voluptuous as vol
 from homeassistant import config_entries
 
 # from homeassistant.components.usb import UsbServiceInfo
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
-from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import selector
 
 from .const import (
@@ -28,6 +27,7 @@ from .const import (
     TICMODE_STANDARD,
     TICMODE_STANDARD_LABEL,
 )
+from .reader import CannotConnect, CannotRead, linky_tic_tester
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -69,17 +69,25 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         await self.async_set_unique_id(DOMAIN + "_" + user_input[SETUP_SERIAL])
         self._abort_if_unique_id_configured()
         errors = {}
+        title = f"Linky TIC on {user_input[SETUP_SERIAL]}"
         try:
-            config_title = await validate_input(self.hass, user_input)
-        except StandardUnsupported:
-            errors["base"] = "unsupported_standard"
-        except CannotConnect:
+            linky_tic_tester(
+                device=user_input[SETUP_SERIAL],
+                std_mode=user_input[SETUP_TICMODE] == TICMODE_STANDARD,
+            )
+        except CannotConnect as cannot_connect:
+            _LOGGER.error("%s: can not connect: %s", title, cannot_connect)
             errors["base"] = "cannot_connect"
-        except Exception:  # pylint: disable=broad-except
-            _LOGGER.exception("Unexpected exception")
+        except CannotRead as cannot_read:
+            _LOGGER.error(
+                "%s: can not read a line after connection: %s", title, cannot_read
+            )
+            errors["base"] = "cannot_read"
+        except Exception as exc:  # pylint: disable=broad-except
+            _LOGGER.exception("Unexpected exception: %s", exc)
             errors["base"] = "unknown"
         else:
-            return self.async_create_entry(title=config_title, data=user_input)
+            return self.async_create_entry(title=title, data=user_input)
 
         return self.async_show_form(
             step_id="user", data_schema=STEP_USER_DATA_SCHEMA, errors=errors
@@ -96,14 +104,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     ) -> config_entries.OptionsFlow:
         """Create the options flow."""
         return OptionsFlowHandler(config_entry)
-
-
-class CannotConnect(HomeAssistantError):
-    """Error to indicate we cannot connect."""
-
-
-class StandardUnsupported(HomeAssistantError):
-    """Error to indicate that the user choose the unsupported standard TIC mode."""
 
 
 class OptionsFlowHandler(config_entries.OptionsFlow):
@@ -131,35 +131,3 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 }
             ),
         )
-
-
-async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> str:
-    """Validate the user input allows us to connect.
-
-    Data has the keys from STEP_USER_DATA_SCHEMA with values provided by the user.
-    """
-    if data[SETUP_TICMODE] == TICMODE_STANDARD:
-        raise StandardUnsupported
-
-    hub = PlaceholderHub(data[SETUP_SERIAL])
-
-    if not await hub.connect():
-        raise CannotConnect
-
-    # Return info that you want to store in the config entry.
-    return f"Linky TIC on {data[SETUP_SERIAL]}"
-
-
-class PlaceholderHub:
-    """Placeholder class to make tests pass.
-
-    TODO Remove this placeholder class and replace with things from your PyPI package.
-    """
-
-    def __init__(self, device: str) -> None:
-        """Initialize."""
-        self.device = device
-
-    async def connect(self) -> bool:
-        """Test if we can authenticate with the device."""
-        return True
