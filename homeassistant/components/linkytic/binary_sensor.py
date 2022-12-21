@@ -23,7 +23,7 @@ from .const import (
     DOMAIN,
     SERIAL_READER,
 )
-from .reader import LinkyTICReader
+from .serial_reader import LinkyTICReader
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -143,7 +143,7 @@ class SerialConnectivity(BinarySensorEntity):
             default_model=DID_DEFAULT_MODEL,
             default_name=DID_DEFAULT_NAME,
             identifiers={(DOMAIN, self._device_uniq_id)},
-            name=self._title,
+            name=f"Linky ({self._title})",
             manufacturer=self._serial_controller.device_identification[DID_CONSTRUCTOR],
             model=self._serial_controller.device_identification[DID_TYPE],
         )

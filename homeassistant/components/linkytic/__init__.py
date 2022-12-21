@@ -28,7 +28,7 @@ from .const import (  # config flow; legacy
     SETUP_SERIAL,
     TICMODE_HISTORIC,
 )
-from .reader import LinkyTICReader
+from .serial_reader import LinkyTICReader
 
 PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR, Platform.SENSOR]
 
@@ -109,7 +109,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, serial_reader.signalstop)
     # Add options callback
     entry.async_on_unload(entry.add_update_listener(update_listener))
-    entry.async_on_unload(lambda: serial_reader.signalstop("unload"))
+    entry.async_on_unload(lambda: serial_reader.signalstop("config_entry_unload"))
     # Add the serial reader to HA and initialize sensors
     try:
         hass.data[DOMAIN][entry.entry_id] = serial_reader

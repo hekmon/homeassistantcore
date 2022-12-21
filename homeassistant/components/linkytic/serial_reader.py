@@ -114,8 +114,11 @@ class LinkyTICReader(threading.Thread):
     @callback
     def signalstop(self, event):
         """Activate the stop flag in order to stop the thread from within."""
-        _LOGGER.warning("Stopping %s (received %s)", self._title, event)
-        self._stopsignal = True
+        if self.is_alive():
+            _LOGGER.warning(
+                "Stopping %s serial thread reader (received %s)", self._title, event
+            )
+            self._stopsignal = True
 
     def update_options(self, real_time: bool):
         """Setter to update serial reader options."""

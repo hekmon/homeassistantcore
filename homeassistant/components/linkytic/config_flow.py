@@ -27,7 +27,7 @@ from .const import (
     TICMODE_STANDARD,
     TICMODE_STANDARD_LABEL,
 )
-from .reader import CannotConnect, CannotRead, linky_tic_tester
+from .serial_reader import CannotConnect, CannotRead, linky_tic_tester
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -69,7 +69,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         await self.async_set_unique_id(DOMAIN + "_" + user_input[SETUP_SERIAL])
         self._abort_if_unique_id_configured()
         errors = {}
-        title = f"Linky TIC on {user_input[SETUP_SERIAL]}"
+        title = user_input[SETUP_SERIAL]
         try:
             linky_tic_tester(
                 device=user_input[SETUP_SERIAL],

@@ -24,9 +24,9 @@
         "step": {
             "init": {
                 "data": {
-                    "real_time": "Real time mode for supported sensors"
+                    "real_time": "Real time mode for supported sensors \u26a0\ufe0f"
                 },
-                "description": "\u26a0\ufe0f This can be pretty heavy on Home Assistant, expect CPU usage and database size to increase !",
+                "description": "Real time can be pretty heavy on Home Assistant, expect CPU usage and database size to increase !",
                 "title": "Linky TIC - Options"
             }
         }
