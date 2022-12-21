@@ -53,10 +53,15 @@ CONFIG_SCHEMA = vol.Schema(
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    """Set up the Linky LiXee-TIC-DIN component."""
-    _LOGGER.debug("YAML config: init lixee component with %s", config)
+    """Set up the Linky TIC component."""
+    _LOGGER.debug("YAML config: init linkytic component with %s", config)
     # Debug conf
     conf: Any = config.get(DOMAIN)
+    if not conf:
+        _LOGGER.debug(
+            "YAML config: called without conf, must be config flow config, exiting"
+        )
+        return True
     _LOGGER.debug("YAML config: serial port: %s", conf[CONF_SERIAL_PORT])
     _LOGGER.debug("YAML config: standard mode: %s", conf[CONF_STANDARD_MODE])
     # create the serial controller and start it in a thread
@@ -104,6 +109,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, serial_reader.signalstop)
     # Add options callback
     entry.async_on_unload(entry.add_update_listener(update_listener))
+    entry.async_on_unload(lambda: serial_reader.signalstop("unload"))
     # Add the serial reader to HA and initialize sensors
     try:
         hass.data[DOMAIN][entry.entry_id] = serial_reader

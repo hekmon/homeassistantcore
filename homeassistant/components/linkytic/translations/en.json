@@ -4,7 +4,7 @@
             "already_configured": "Device is already configured"
         },
         "error": {
-            "cannot_connect": "Failed to connect",
+            "cannot_connect": "Failed to connect (check the logs)",
             "cannot_read": "Serial open successfully but an error occured while reading a line",
             "unknown": "Unexpected error",
             "unsupported_standard": "The standard TIC mode is not supported yet. If you want to help development, feel free to open an issue: https://github.com/hekmon/lixeeticdin/issues/new"

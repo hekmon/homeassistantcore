@@ -13,7 +13,7 @@
     "error": {
       "unsupported_standard": "The standard TIC mode is not supported yet. If you want to help development, feel free to open an issue: https://github.com/hekmon/lixeeticdin/issues/new",
       "cannot_read": "Serial open successfully but an error occured while reading a line",
-      "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
+      "cannot_connect": "Failed to connect (check the logs)",
       "unknown": "[%key:common::config_flow::error::unknown%]"
     },
     "abort": {
