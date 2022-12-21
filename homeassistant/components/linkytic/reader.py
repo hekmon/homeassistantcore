@@ -9,7 +9,6 @@ import serial
 import serial.serialutil
 
 from homeassistant.core import callback
-from homeassistant.exceptions import HomeAssistantError
 
 from .const import (
     BYTESIZE,
@@ -315,9 +314,17 @@ def linky_tic_tester(device: str, std_mode: bool) -> None:
     serial_reader.close()
 
 
-class CannotConnect(HomeAssistantError):
+class CannotConnect(Exception):
     """Error to indicate we cannot connect."""
 
+    def __init__(self, message):
+        """Initialize the CannotConnect error with an explanation message."""
+        super().__init__(message)
 
-class CannotRead(HomeAssistantError):
+
+class CannotRead(Exception):
     """Error to indicate that the serial connection was open successfully but an error occurred while reading a line."""
+
+    def __init__(self, message):
+        """Initialize the CannotRead error with an explanation message."""
+        super().__init__(message)
