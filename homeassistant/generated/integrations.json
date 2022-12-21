@@ -2926,6 +2926,12 @@
       "config_flow": false,
       "iot_class": "local_polling"
     },
+    "linkytic": {
+      "name": "Linky TIC",
+      "integration_type": "hub",
+      "config_flow": true,
+      "iot_class": "local_polling"
+    },
     "linode": {
       "name": "Linode",
       "integration_type": "hub",
