@@ -10,11 +10,19 @@ from homeassistant.components.binary_sensor import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import EntityCategory
+from homeassistant.helpers.entity import DeviceInfo, EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 
-from .const import DOMAIN, SERIAL_READER
+from .const import (
+    DID_CONSTRUCTOR,
+    DID_DEFAULT_MANUFACTURER,
+    DID_DEFAULT_MODEL,
+    DID_DEFAULT_NAME,
+    DID_TYPE,
+    DOMAIN,
+    SERIAL_READER,
+)
 from .reader import LinkyTICReader
 
 _LOGGER = logging.getLogger(__name__)
@@ -37,7 +45,7 @@ async def async_setup_platform(
         return
     # Init sensors
     await async_init(
-        title="YAML config",
+        title="Linky (YAML config)",
         uniq_id=None,
         serial_reader=discovery_info[SERIAL_READER],
         async_add_entities=async_add_entities,
@@ -125,6 +133,20 @@ class SerialConnectivity(BinarySensorEntity):
             else f"{DOMAIN}_{uniq_id}_serial_connectivity"
         )
         self._serial_controller = serial_reader
+        self._device_uniq_id = uniq_id if uniq_id is not None else "yaml_legacy"
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return the device info."""
+        return DeviceInfo(
+            default_manufacturer=DID_DEFAULT_MANUFACTURER,
+            default_model=DID_DEFAULT_MODEL,
+            default_name=DID_DEFAULT_NAME,
+            identifiers={(DOMAIN, self._device_uniq_id)},
+            name=self._title,
+            manufacturer=self._serial_controller.device_identification[DID_CONSTRUCTOR],
+            model=self._serial_controller.device_identification[DID_TYPE],
+        )
 
     @property
     def is_on(self) -> bool:

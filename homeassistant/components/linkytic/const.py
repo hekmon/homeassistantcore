@@ -51,14 +51,18 @@ LINE_END = b"\r\n"
 FRAME_END = b"\r\x03\x02\n"
 
 
-# Device identification (V3.04A du 27/03/2019)
+# Device identification
 
 DID_CONSTRUCTOR = "constructor"
 DID_YEAR = "year"
 DID_TYPE = "device_type"
 DID_REGNUMBER = "registration_number"
 
-# #  https://euridis.org/wp-content/uploads/IdentifiantsEuridisListeCCTTV304A_143027.pdf
+DID_DEFAULT_MANUFACTURER = "ENEDIS"
+DID_DEFAULT_MODEL = "Compteur communiquant Linky"
+DID_DEFAULT_NAME = "Linky"
+
+# #  https://euridis.org/wp-content/uploads/IdentifiantsEuridisListeCCTTV304A_143027.pdf  (V3.04A du 27/03/2019)
 CONSTRUCTORS_CODES = {
     "01": "CROUZET / MONETEL",
     "02": "SAGEM / SAGEMCOM",

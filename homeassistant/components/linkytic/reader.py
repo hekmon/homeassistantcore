@@ -13,6 +13,10 @@ from homeassistant.exceptions import HomeAssistantError
 
 from .const import (
     BYTESIZE,
+    DID_CONSTRUCTOR,
+    DID_REGNUMBER,
+    DID_TYPE,
+    DID_YEAR,
     FRAME_END,
     LINE_END,
     MODE_HISTORIC_BAUD_RATE,
@@ -51,9 +55,12 @@ class LinkyTICReader(threading.Thread):
         self._first_line = True
         self._values: dict[str, dict[str, str | None]] = {}
         self._frames_read = -1  # we consider that the first frame will be incomplete
-        self.device_identification: dict[
-            str, str
-        ] = {}  # will be set by the ADCO sensor
+        self.device_identification: dict[str, str | None] = {
+            DID_CONSTRUCTOR: None,
+            DID_REGNUMBER: None,
+            DID_TYPE: None,
+            DID_YEAR: None,
+        }  # will be set by the ADCO sensor
         # Init parent thread class
         super().__init__(name=title)
 

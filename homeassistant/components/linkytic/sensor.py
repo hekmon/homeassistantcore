@@ -16,7 +16,7 @@ from homeassistant.const import (
     POWER_VOLT_AMPERE,
 )
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers.entity import EntityCategory
+from homeassistant.helpers.entity import DeviceInfo, EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 
@@ -26,6 +26,9 @@ from .const import (
     CONSTRUCTORS_CODES,
     DEVICE_TYPES,
     DID_CONSTRUCTOR,
+    DID_DEFAULT_MANUFACTURER,
+    DID_DEFAULT_MODEL,
+    DID_DEFAULT_NAME,
     DID_REGNUMBER,
     DID_TYPE,
     DID_YEAR,
@@ -48,19 +51,17 @@ async def async_setup_platform(
     discovery_info: DiscoveryInfoType | None = None,
 ) -> None:
     """Legacy (thru YAML config) platform setup."""
-    if discovery_info:
-        serial_reader = discovery_info[SERIAL_READER]
-    else:
+    if discovery_info is None:
         _LOGGER.error(
             "YAML config: Can not init sensor plateform with empty discovery info"
         )
         return
     await async_init(
-        "YAML config",
+        "Linky (YAML config)",
         None,
         discovery_info[CONF_STANDARD_MODE],
         discovery_info[CONF_THREE_PHASE],
-        serial_reader,
+        discovery_info[SERIAL_READER],
         async_add_entities,
     )
 
@@ -339,6 +340,20 @@ class ADCOSensor(SensorEntity):
         )
         self._serial_controller = serial_reader
         self._tag = "ADCO"
+        self._device_uniq_id = uniq_id if uniq_id is not None else "yaml_legacy"
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return the device info."""
+        return DeviceInfo(
+            default_manufacturer=DID_DEFAULT_MANUFACTURER,
+            default_model=DID_DEFAULT_MODEL,
+            default_name=DID_DEFAULT_NAME,
+            identifiers={(DOMAIN, self._device_uniq_id)},
+            name=self._title,
+            manufacturer=self._serial_controller.device_identification[DID_CONSTRUCTOR],
+            model=self._serial_controller.device_identification[DID_TYPE],
+        )
 
     @property
     def native_value(self) -> str | None:
@@ -420,9 +435,7 @@ class ADCOSensor(SensorEntity):
         # # Parse device type code
         device_type = ads[4:6]
         try:
-            device_identification[
-                DID_TYPE
-            ] = f"{DEVICE_TYPES[device_type]} ({device_type})"
+            device_identification[DID_TYPE] = f"{DEVICE_TYPES[device_type]}"
         except KeyError:
             _LOGGER.warning(
                 "%s: ADS device type is unknown: %s", self._title, device_type
@@ -474,6 +487,7 @@ class RegularStrSensor(SensorEntity):
         self._title = title
         self._serial_controller = serial_reader
         self._tag = tag.upper()
+        self._device_uniq_id = uniq_id if uniq_id is not None else "yaml_legacy"
         # Generic entity properties
         if category:
             self._attr_entity_category = category
@@ -486,6 +500,19 @@ class RegularStrSensor(SensorEntity):
         if icon:
             self._attr_icon = icon
         self._attr_entity_registry_enabled_default = enabled_by_default
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return the device info."""
+        return DeviceInfo(
+            default_manufacturer=DID_DEFAULT_MANUFACTURER,
+            default_model=DID_DEFAULT_MODEL,
+            default_name=DID_DEFAULT_NAME,
+            identifiers={(DOMAIN, self._device_uniq_id)},
+            name=self._title,
+            manufacturer=self._serial_controller.device_identification[DID_CONSTRUCTOR],
+            model=self._serial_controller.device_identification[DID_TYPE],
+        )
 
     @property
     def native_value(self) -> str | None:
@@ -547,6 +574,7 @@ class RegularIntSensor(SensorEntity):
         self._title = title
         self._serial_controller = serial_reader
         self._tag = tag.upper()
+        self._device_uniq_id = uniq_id if uniq_id is not None else "yaml_legacy"
         # Generic entity properties
         if category:
             self._attr_entity_category = category
@@ -565,6 +593,19 @@ class RegularIntSensor(SensorEntity):
             self._attr_native_unit_of_measurement = native_unit_of_measurement
         if state_class:
             self._attr_state_class = state_class
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return the device info."""
+        return DeviceInfo(
+            default_manufacturer=DID_DEFAULT_MANUFACTURER,
+            default_model=DID_DEFAULT_MODEL,
+            default_name=DID_DEFAULT_NAME,
+            identifiers={(DOMAIN, self._device_uniq_id)},
+            name=self._title,
+            manufacturer=self._serial_controller.device_identification[DID_CONSTRUCTOR],
+            model=self._serial_controller.device_identification[DID_TYPE],
+        )
 
     @property
     def native_value(self) -> int | None:
@@ -654,6 +695,20 @@ class PEJPSensor(SensorEntity):
         self._tag = "PEJP"
         self._attr_unique_id = (
             "linky_pejp" if uniq_id is None else f"{DOMAIN}_{uniq_id}_pejp"
+        )
+        self._device_uniq_id = uniq_id if uniq_id is not None else "yaml_legacy"
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return the device info."""
+        return DeviceInfo(
+            default_manufacturer=DID_DEFAULT_MANUFACTURER,
+            default_model=DID_DEFAULT_MODEL,
+            default_name=DID_DEFAULT_NAME,
+            identifiers={(DOMAIN, self._device_uniq_id)},
+            name=self._title,
+            manufacturer=self._serial_controller.device_identification[DID_CONSTRUCTOR],
+            model=self._serial_controller.device_identification[DID_TYPE],
         )
 
     @property
