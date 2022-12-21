@@ -23,6 +23,12 @@ from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 from .const import (
     CONF_STANDARD_MODE,
     CONF_THREE_PHASE,
+    CONSTRUCTORS_CODES,
+    DEVICE_TYPES,
+    DID_CONSTRUCTOR,
+    DID_REGNUMBER,
+    DID_TYPE,
+    DID_YEAR,
     DOMAIN,
     SERIAL_READER,
     SETUP_THREEPHASE,
@@ -399,52 +405,50 @@ class ADCOSensor(SensorEntity):
             self._extra = {}
             return
         # let's parse ADS as EURIDIS
-        extra = {
-            "code constructeur": ads[0:2],
-            "année de construction": f"20{ads[2:4]}",
-            "matricule de l'appareil": ads[6:],
-        }
-        device_type_key = "type de l'appareil"
+        device_identification = {DID_YEAR: ads[2:4], DID_REGNUMBER: ads[6:]}
+        # # Parse constructor code
+        constructor_code = ads[0:2]
+        try:
+            device_identification[DID_CONSTRUCTOR] = CONSTRUCTORS_CODES[
+                constructor_code
+            ]
+        except KeyError:
+            _LOGGER.warning(
+                "%s: constructor code is unknown: %s", self._title, constructor_code
+            )
+            device_identification[DID_CONSTRUCTOR] = None
+        # # Parse device type code
         device_type = ads[4:6]
-        if device_type == "61":
-            extra[
-                device_type_key
-            ] = "Compteur monophasé 60 A généralisation Linky G3 - arrivée puissance haute (61)"
-        elif device_type == "62":
-            extra[
-                device_type_key
-            ] = "Compteur monophasé 90 A généralisation Linky G1 - arrivée puissance basse (62)"
-        elif device_type == "63":
-            extra[
-                device_type_key
-            ] = "Compteur triphasé 60 A généralisation Linky G1 - arrivée puissance basse (63)"
-        elif device_type == "64":
-            extra[
-                device_type_key
-            ] = "Compteur monophasé 60 A généralisation Linky G3 - arrivée puissance basse (64)"
-        elif device_type == "70":
-            extra[
-                device_type_key
-            ] = "Compteur monophasé Linky 60 A mise au point G3 (70)"
-        elif device_type == "71":
-            extra[
-                device_type_key
-            ] = "Compteur triphasé Linky 60 A mise au point G3 (71)"
-        elif device_type == "75":
-            extra[
-                device_type_key
-            ] = "Compteur monophasé 90 A généralisation Linky G3 - arrivée puissance basse (75)"
-        elif device_type == "76":
-            extra[
-                device_type_key
-            ] = "Compteur triphasé 60 A généralisation Linky G3 - arrivée puissance basse (76)"
-        else:
+        try:
+            device_identification[
+                DID_TYPE
+            ] = f"{DEVICE_TYPES[device_type]} ({device_type})"
+        except KeyError:
             _LOGGER.warning(
                 "%s: ADS device type is unknown: %s", self._title, device_type
             )
-            extra[device_type_key] = device_type
-        _LOGGER.debug("%s: parsed ADS: %s", self._title, repr(extra))
-        self._extra = extra
+            device_identification[DID_TYPE] = None
+        # Parsing done
+        _LOGGER.debug("%s: parsed ADS: %s", self._title, repr(device_identification))
+        # # Update main thread with device infos
+        self._serial_controller.device_identification = device_identification
+        # # Set this sensor extra attributes
+        constructor_str = (
+            f"{device_identification[DID_CONSTRUCTOR]} ({constructor_code})"
+            if device_identification[DID_CONSTRUCTOR] is not None
+            else f"Inconnu ({constructor_code})"
+        )
+        type_str = (
+            f"{device_identification[DID_TYPE]} ({device_type})"
+            if device_identification[DID_TYPE] is not None
+            else f"Inconnu ({device_type})"
+        )
+        self._extra = {
+            "constructeur": constructor_str,
+            "année de construction": f"20{device_identification[DID_YEAR]}",
+            "type de l'appareil": type_str,
+            "matricule de l'appareil": device_identification[DID_REGNUMBER],
+        }
 
 
 class RegularStrSensor(SensorEntity):

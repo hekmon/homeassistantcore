@@ -51,12 +51,15 @@ class LinkyTICReader(threading.Thread):
         self._first_line = True
         self._values: dict[str, dict[str, str | None]] = {}
         self._frames_read = -1  # we consider that the first frame will be incomplete
+        self.device_identification: dict[
+            str, str
+        ] = {}  # will be set by the ADCO sensor
         # Init parent thread class
         super().__init__(name=title)
 
     def get_values(self, tag) -> tuple[str | None, str | None]:
         """Get tag value and timestamp from the thread memory cache."""
-        if not self.is_connected:
+        if not self.is_connected():
             return None, None
         try:
             payload = self._values[tag]
