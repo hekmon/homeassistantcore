@@ -113,7 +113,7 @@ async def async_init(
         if serial_reader.has_read_full_frame():
             _LOGGER.debug("%s: a full frame has been read, initializing sensors", title)
             break
-        if i == 10:
+        if i == 8:
             _LOGGER.warning(
                 "%s: wait time is over but a full frame has yet to be read: initializing sensors anyway",
                 title,

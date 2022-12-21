@@ -1,6 +1,7 @@
 """Binary sensors for linkytic integration."""
 from __future__ import annotations
 
+import asyncio
 import logging
 
 from homeassistant.components.binary_sensor import (
@@ -28,16 +29,19 @@ async def async_setup_platform(
 ) -> None:
     """Set up the Linky TIC binary sensor platform."""
     _LOGGER.debug("YAML config: setting up binary sensor plateform")
-    # Init sensors
-    if discovery_info:
-        async_add_entities(
-            [SerialConnectivity("YAML config", None, discovery_info[SERIAL_READER])],
-            True,
-        )
-    else:
+    # Validate discovery_info is not NOne
+    if discovery_info is None:
         _LOGGER.error(
             "YAML config: can not init binary sensor plateform with empty discovery info"
         )
+        return
+    # Init sensors
+    await async_init(
+        title="YAML config",
+        uniq_id=None,
+        serial_reader=discovery_info[SERIAL_READER],
+        async_add_entities=async_add_entities,
+    )
 
 
 # config flow setup
@@ -58,8 +62,40 @@ async def async_setup_entry(
         )
         return
     # Init sensors
-    async_add_devices(
-        [SerialConnectivity(config_entry.title, config_entry.entry_id, serial_reader)],
+    await async_init(
+        title=config_entry.title,
+        uniq_id=config_entry.entry_id,
+        serial_reader=serial_reader,
+        async_add_entities=async_add_devices,
+    )
+
+
+# factorized init
+async def async_init(
+    title: str,
+    uniq_id: str | None,
+    serial_reader: LinkyTICReader,
+    async_add_entities: AddEntitiesCallback,
+) -> None:
+    """Set up the Linky TIC sensor platform."""
+    # Wait a bit for the controller to feed on serial frames (home assistant warns after 10s)
+    _LOGGER.debug(
+        "%s: waiting at most 9s before setting up binary sensor plateform in order for the async serial reader to have time to parse a full frame",
+        title,
+    )
+    for i in range(9):
+        await asyncio.sleep(1)
+        if serial_reader.has_read_full_frame():
+            _LOGGER.debug("%s: a full frame has been read, initializing sensors", title)
+            break
+        if i == 8:
+            _LOGGER.warning(
+                "%s: wait time is over but a full frame has yet to be read: initializing sensors anyway",
+                title,
+            )
+    # Init sensors
+    async_add_entities(
+        [SerialConnectivity(title, uniq_id, serial_reader)],
         True,
     )
 
