@@ -86,7 +86,7 @@ class SerialConnectivity(BinarySensorEntity):
         self._attr_unique_id = (
             "linky_serial_connectivity"
             if uniq_id is None
-            else "linky_serial_connectivity__" + uniq_id
+            else f"{DOMAIN}_{uniq_id}_serial_connectivity"
         )
         self._serial_controller = serial_reader
 

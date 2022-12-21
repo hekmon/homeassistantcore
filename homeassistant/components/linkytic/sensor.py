@@ -329,7 +329,7 @@ class ADCOSensor(SensorEntity):
         _LOGGER.debug("%s: initializing ADCO sensor", title)
         self._title = title
         self._attr_unique_id = (
-            "linky_adco" if uniq_id is None else "linky_adco__" + uniq_id
+            "linky_adco" if uniq_id is None else f"{DOMAIN}_{uniq_id}_adco"
         )
         self._serial_controller = serial_reader
         self._tag = "ADCO"
@@ -477,7 +477,7 @@ class RegularStrSensor(SensorEntity):
         self._attr_unique_id = (
             f"linky_{tag.lower()}"
             if uniq_id is None
-            else f"linky_{tag.lower()}__{uniq_id}"
+            else f"{DOMAIN}_{uniq_id}_{tag.lower()}"
         )
         if icon:
             self._attr_icon = icon
@@ -550,7 +550,7 @@ class RegularIntSensor(SensorEntity):
         self._attr_unique_id = (
             f"linky_{tag.lower()}"
             if uniq_id is None
-            else f"linky_{tag.lower()}__{uniq_id}"
+            else f"{DOMAIN}_{uniq_id}_{tag.lower()}"
         )
         if icon:
             self._attr_icon = icon
@@ -649,7 +649,7 @@ class PEJPSensor(SensorEntity):
         self._serial_controller = serial_reader
         self._tag = "PEJP"
         self._attr_unique_id = (
-            "linky_pejp" if uniq_id is None else "linky_pejp__" + uniq_id
+            "linky_pejp" if uniq_id is None else f"{DOMAIN}_{uniq_id}_pejp"
         )
 
     @property
