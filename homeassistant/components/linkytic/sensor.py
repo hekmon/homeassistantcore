@@ -360,7 +360,7 @@ class ADCOSensor(SensorEntity):
         """Value of the sensor."""
         value, _ = self._serial_controller.get_values(self._tag)
         _LOGGER.debug(
-            "%s: recovered ADCO value from serial controller: %s", self._title, value
+            "%s: retrieved ADCO value from serial controller: %s", self._title, value
         )
         if value is None:
             if self._attr_available and self._serial_controller.has_read_full_frame():
@@ -385,7 +385,7 @@ class ADCOSensor(SensorEntity):
         """Update the value of the sensor from the thread object memory cache."""
         value, _ = self._serial_controller.get_values(self._tag)
         _LOGGER.debug(
-            "%s: recovered %s value from serial controller: %s",
+            "%s: retrieved %s value from serial controller: %s",
             self._title,
             self._tag,
             repr(value),
@@ -410,6 +410,11 @@ class ADCOSensor(SensorEntity):
 
     def parse_ads(self, ads):
         """Extract information contained in the ADS as EURIDIS."""
+        _LOGGER.debug(
+            "%s: parsing ADS %s",
+            self._title,
+            ads,
+        )
         if len(ads) != 12:
             _LOGGER.error(
                 "%s: ADS should be 12 char long, actually %d cannot parse: %s",
@@ -525,7 +530,7 @@ class RegularStrSensor(SensorEntity):
         """Update the value of the sensor from the thread object memory cache."""
         value, _ = self._serial_controller.get_values(self._tag)
         _LOGGER.debug(
-            "%s: recovered %s value from serial controller: %s",
+            "%s: retrieved %s value from serial controller: %s",
             self._title,
             self._tag,
             repr(value),
@@ -621,7 +626,7 @@ class RegularIntSensor(SensorEntity):
         """Update the value of the sensor from the thread object memory cache."""
         value, _ = self._serial_controller.get_values(self._tag)
         _LOGGER.debug(
-            "%s: recovered %s value from serial controller: %s",
+            "%s: retrieved %s value from serial controller: %s",
             self._title,
             self._tag,
             repr(value),
@@ -722,7 +727,7 @@ class PEJPSensor(SensorEntity):
         """Update the value of the sensor from the thread object memory cache."""
         value, _ = self._serial_controller.get_values(self._tag)
         _LOGGER.debug(
-            "%s: recovered %s value from serial controller: %s",
+            "%s: retrieved %s value from serial controller: %s",
             self._title,
             self._tag,
             repr(value),

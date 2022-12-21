@@ -115,7 +115,7 @@ class LinkyTICReader(threading.Thread):
     def signalstop(self, event):
         """Activate the stop flag in order to stop the thread from within."""
         if self.is_alive():
-            _LOGGER.warning(
+            _LOGGER.info(
                 "Stopping %s serial thread reader (received %s)", self._title, event
             )
             self._stopsignal = True
@@ -152,6 +152,12 @@ class LinkyTICReader(threading.Thread):
         self._first_line = True
         self._values = {}
         self._frames_read = -1
+        self.device_identification = {
+            DID_CONSTRUCTOR: None,
+            DID_REGNUMBER: None,
+            DID_TYPE: None,
+            DID_YEAR: None,
+        }
         time.sleep(10)
 
     def _parse_line(self, line) -> str | None:
