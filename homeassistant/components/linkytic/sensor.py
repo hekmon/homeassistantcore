@@ -301,6 +301,7 @@ class ADCOSensor(SensorEntity):
         self._serial_controller = serial_reader
         self._tag = "ADCO"
         self._device_uniq_id = uniq_id
+        self._last_value: str | None = None
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -318,22 +319,7 @@ class ADCOSensor(SensorEntity):
     @property
     def native_value(self) -> str | None:
         """Value of the sensor."""
-        value, _ = self._serial_controller.get_values(self._tag)
-        _LOGGER.debug(
-            "%s: retrieved ADCO value from serial controller: %s", self._title, value
-        )
-        if value is None:
-            if self._attr_available and self._serial_controller.has_read_full_frame():
-                _LOGGER.info(
-                    "%s: marking the ADCO sensor as unavailable: a full frame has been read but ADCO has not been found",
-                    self._title,
-                )
-                self._attr_available = False
-            return value
-        # else
-        # update extra info by parsing value
-        self.parse_ads(value)
-        return value
+        return self._last_value
 
     @property
     def extra_state_attributes(self) -> dict[str, str]:
@@ -360,6 +346,7 @@ class ADCOSensor(SensorEntity):
                 )
                 self._attr_available = False
         else:
+            self.parse_ads(value)  # update extra info by parsing value
             if not self._attr_available:
                 _LOGGER.info(
                     "%s: marking the %s sensor as available now ! (was not previously)",
@@ -367,6 +354,7 @@ class ADCOSensor(SensorEntity):
                     self._tag,
                 )
                 self._attr_available = True
+        self._last_value = value
 
     def parse_ads(self, ads):
         """Extract information contained in the ADS as EURIDIS."""
@@ -453,6 +441,7 @@ class RegularStrSensor(SensorEntity):
         self._serial_controller = serial_reader
         self._tag = tag.upper()
         self._device_uniq_id = uniq_id
+        self._last_value: str | None = None
         # Generic entity properties
         if category:
             self._attr_entity_category = category
@@ -482,8 +471,7 @@ class RegularStrSensor(SensorEntity):
     @property
     def native_value(self) -> str | None:
         """Value of the sensor."""
-        value, _ = self._serial_controller.get_values(self._tag)
-        return value
+        return self._last_value
 
     @callback
     def update(self):
@@ -512,6 +500,7 @@ class RegularStrSensor(SensorEntity):
                     self._tag,
                 )
                 self._attr_available = True
+        self._last_value = value
 
 
 class RegularIntSensor(SensorEntity):
@@ -545,6 +534,7 @@ class RegularIntSensor(SensorEntity):
             self._serial_controller.register_push_notif(
                 self._tag, self.update_notification
             )
+        self._last_value: int | None = None
         # Generic entity properties
         if category:
             self._attr_entity_category = category
@@ -580,11 +570,7 @@ class RegularIntSensor(SensorEntity):
     @property
     def native_value(self) -> int | None:
         """Value of the sensor."""
-        raw_value, _ = self._serial_controller.get_values(self._tag)
-        if raw_value is not None:
-            return int(raw_value)
-        # else
-        return None
+        return self._last_value
 
     @callback
     def update(self):
@@ -605,6 +591,7 @@ class RegularIntSensor(SensorEntity):
                     self._tag,
                 )
                 self._attr_available = False
+            self._last_value = None
         else:
             if not self._attr_available:
                 _LOGGER.info(
@@ -613,20 +600,30 @@ class RegularIntSensor(SensorEntity):
                     self._tag,
                 )
                 self._attr_available = True
+            self._last_value = int(value)
 
     def update_notification(self, realtime_option: bool) -> None:
         """Receive a notification from the serial reader when our tag has been read on the wire."""
         if not realtime_option:
             _LOGGER.debug(
-                "%s: received a push notification for new data but user has not activated real time: skipping",
+                "%s: received a push notification for new %s data but user has not activated real time: skipping",
                 self._title,
+                self._tag,
             )
+            if not self._attr_should_poll:
+                self._attr_should_poll = (
+                    True  # realtime option disable, HA should poll us
+                )
             return
+        # Realtime activated by user
         _LOGGER.debug(
-            "%s: received a push notification for new data and user has activated real time: scheduling ha update",
+            "%s: received a push notification for new %s data and user has activated real time: scheduling ha update",
             self._title,
+            self._tag,
         )
-        self.schedule_update_ha_state(force_refresh=False)
+        if self._attr_should_poll:
+            self._attr_should_poll = False  # now that user has activated realtime, we will push data, no need for HA to poll us
+        self.schedule_update_ha_state(force_refresh=True)
 
 
 class EnergyIndexSensor(RegularIntSensor):
@@ -679,6 +676,7 @@ class PEJPSensor(SensorEntity):
             "linky_pejp" if uniq_id is None else f"{DOMAIN}_{uniq_id}_pejp"
         )
         self._device_uniq_id = uniq_id
+        self._last_value: str | None = None
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -696,8 +694,7 @@ class PEJPSensor(SensorEntity):
     @property
     def native_value(self) -> str | None:
         """Value of the sensor."""
-        value, _ = self._serial_controller.get_values(self._tag)
-        return value
+        return self._last_value
 
     @callback
     def update(self):
@@ -726,3 +723,4 @@ class PEJPSensor(SensorEntity):
                     self._tag,
                 )
                 self._attr_available = True
+        self._last_value = value
