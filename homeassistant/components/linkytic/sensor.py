@@ -18,11 +18,8 @@ from homeassistant.const import (
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity import DeviceInfo, EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 
 from .const import (
-    CONF_STANDARD_MODE,
-    CONF_THREE_PHASE,
     CONSTRUCTORS_CODES,
     DEVICE_TYPES,
     DID_CONSTRUCTOR,
@@ -33,7 +30,6 @@ from .const import (
     DID_TYPE,
     DID_YEAR,
     DOMAIN,
-    SERIAL_READER,
     SETUP_THREEPHASE,
     SETUP_TICMODE,
     TICMODE_STANDARD,
@@ -43,34 +39,11 @@ from .serial_reader import LinkyTICReader
 _LOGGER = logging.getLogger(__name__)
 
 
-# legacy setup via YAML
-async def async_setup_platform(
-    hass: HomeAssistant,
-    config: ConfigType,
-    async_add_entities: AddEntitiesCallback,
-    discovery_info: DiscoveryInfoType | None = None,
-) -> None:
-    """Legacy (thru YAML config) platform setup."""
-    if discovery_info is None:
-        _LOGGER.error(
-            "YAML config: Can not init sensor plateform with empty discovery info"
-        )
-        return
-    await async_init(
-        "Linky (YAML config)",
-        None,
-        discovery_info[CONF_STANDARD_MODE],
-        discovery_info[CONF_THREE_PHASE],
-        discovery_info[SERIAL_READER],
-        async_add_entities,
-    )
-
-
 # config flow setup
 async def async_setup_entry(
     hass: HomeAssistant,
     config_entry: ConfigEntry,
-    async_add_devices: AddEntitiesCallback,
+    async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Modern (thru config entry) sensors setup."""
     _LOGGER.debug("%s: setting up binary sensor plateform", config_entry.title)
@@ -83,63 +56,46 @@ async def async_setup_entry(
             config_entry.title,
         )
         return
-    # Init sensors
-    await async_init(
-        config_entry.title,
-        config_entry.entry_id,
-        config_entry.data.get(SETUP_TICMODE) == TICMODE_STANDARD,
-        bool(config_entry.data.get(SETUP_THREEPHASE)),
-        serial_reader,
-        async_add_devices,
-    )
-
-
-# factorized init
-async def async_init(
-    title: str,
-    uniq_id: str | None,
-    std_mode: bool,
-    three_phase: bool,
-    serial_reader: LinkyTICReader,
-    async_add_entities: AddEntitiesCallback,
-) -> None:
-    """Set up the Linky TIC sensor platform."""
     # Wait a bit for the controller to feed on serial frames (home assistant warns after 10s)
     _LOGGER.debug(
         "%s: waiting at most 9s before setting up sensor plateform in order for the async serial reader to have time to parse a full frame",
-        title,
+        config_entry.title,
     )
     for i in range(9):
         await asyncio.sleep(1)
         if serial_reader.has_read_full_frame():
-            _LOGGER.debug("%s: a full frame has been read, initializing sensors", title)
+            _LOGGER.debug(
+                "%s: a full frame has been read, initializing sensors",
+                config_entry.title,
+            )
             break
         if i == 8:
             _LOGGER.warning(
                 "%s: wait time is over but a full frame has yet to be read: initializing sensors anyway",
-                title,
+                config_entry.title,
             )
     # Init sensors
     sensors = []
-    if std_mode:
+    if config_entry.data.get(SETUP_TICMODE) == TICMODE_STANDARD:
+        # standard mode
         _LOGGER.error(
             "%s: standard mode is not supported (yet ?): no entities will be spawned",
-            title,
+            config_entry.title,
         )
     else:
         # historic mode
-        if three_phase:
+        if bool(config_entry.data.get(SETUP_THREEPHASE)):
             _LOGGER.error(
                 "%s: three-phase historic mode is not supported (yet ?): no entities will be spawned",
-                title,
+                config_entry.title,
             )
         else:
             # single phase
             sensors = [
-                ADCOSensor(title, uniq_id, serial_reader),
+                ADCOSensor(config_entry.title, config_entry.entry_id, serial_reader),
                 RegularStrSensor(
-                    title,
-                    uniq_id,
+                    config_entry.title,
+                    config_entry.entry_id,
                     serial_reader,
                     "OPTARIF",
                     "Option tarifaire choisie",
@@ -147,8 +103,8 @@ async def async_init(
                     category=EntityCategory.CONFIG,
                 ),
                 RegularIntSensor(
-                    title,
-                    uniq_id,
+                    config_entry.title,
+                    config_entry.entry_id,
                     serial_reader,
                     "ISOUSC",
                     "Intensité souscrite",
@@ -157,99 +113,103 @@ async def async_init(
                     native_unit_of_measurement=ELECTRIC_CURRENT_AMPERE,
                 ),
                 EnergyIndexSensor(
-                    title, uniq_id, serial_reader, "BASE", "Index option Base"
+                    config_entry.title,
+                    config_entry.entry_id,
+                    serial_reader,
+                    "BASE",
+                    "Index option Base",
                 ),
                 EnergyIndexSensor(
-                    title,
-                    uniq_id,
+                    config_entry.title,
+                    config_entry.entry_id,
                     serial_reader,
                     "HCHC",
                     "Index option Heures Creuses - Heures Creuses",
                 ),
                 EnergyIndexSensor(
-                    title,
-                    uniq_id,
+                    config_entry.title,
+                    config_entry.entry_id,
                     serial_reader,
                     "HCHP",
                     "Index option Heures Creuses - Heures Pleines",
                 ),
                 EnergyIndexSensor(
-                    title,
-                    uniq_id,
+                    config_entry.title,
+                    config_entry.entry_id,
                     serial_reader,
                     "EJPHN",
                     "Index option EJP - Heures Normal"
                     + "es",  # workaround for codespell in HA pre commit hook
                 ),
                 EnergyIndexSensor(
-                    title,
-                    uniq_id,
+                    config_entry.title,
+                    config_entry.entry_id,
                     serial_reader,
                     "EJPHPM",
                     "Index option EJP - Heures de Pointe Mobile",
                 ),
                 EnergyIndexSensor(
-                    title,
-                    uniq_id,
+                    config_entry.title,
+                    config_entry.entry_id,
                     serial_reader,
                     "BBRHCJB",
                     "Index option Tempo - Heures Creuses Jours Bleus",
                 ),
                 EnergyIndexSensor(
-                    title,
-                    uniq_id,
+                    config_entry.title,
+                    config_entry.entry_id,
                     serial_reader,
                     "BBRHPJB",
                     "Index option Tempo - Heures Pleines Jours Bleus",
                 ),
                 EnergyIndexSensor(
-                    title,
-                    uniq_id,
+                    config_entry.title,
+                    config_entry.entry_id,
                     serial_reader,
                     "BBRHCJW",
                     "Index option Tempo - Heures Creuses Jours Blancs",
                 ),
                 EnergyIndexSensor(
-                    title,
-                    uniq_id,
+                    config_entry.title,
+                    config_entry.entry_id,
                     serial_reader,
                     "BBRHPJW",
                     "Index option Tempo - Heures Pleines Jours Blancs",
                 ),
                 EnergyIndexSensor(
-                    title,
-                    uniq_id,
+                    config_entry.title,
+                    config_entry.entry_id,
                     serial_reader,
                     "BBRHCJR",
                     "Index option Tempo - Heures Creuses Jours Rouges",
                 ),
                 EnergyIndexSensor(
-                    title,
-                    uniq_id,
+                    config_entry.title,
+                    config_entry.entry_id,
                     serial_reader,
                     "BBRHPJR",
                     "Index option Tempo - Heures Pleines Jours Rouges",
                 ),
-                PEJPSensor(title, uniq_id, serial_reader),
+                PEJPSensor(config_entry.title, config_entry.entry_id, serial_reader),
                 RegularStrSensor(
-                    title,
-                    uniq_id,
+                    config_entry.title,
+                    config_entry.entry_id,
                     serial_reader,
                     "PTEC",
                     "Période Tarifaire en cours",
                     "mdi:calendar-expand-horizontal",
                 ),
                 RegularStrSensor(
-                    title,
-                    uniq_id,
+                    config_entry.title,
+                    config_entry.entry_id,
                     serial_reader,
                     "DEMAIN",
                     "Couleur du lendemain",
                     "mdi:palette",
                 ),
                 RegularIntSensor(
-                    title,
-                    uniq_id,
+                    config_entry.title,
+                    config_entry.entry_id,
                     serial_reader,
                     "IINST",
                     "Intensité Instantanée",
@@ -258,8 +218,8 @@ async def async_init(
                     state_class=SensorStateClass.MEASUREMENT,
                 ),
                 RegularIntSensor(
-                    title,
-                    uniq_id,
+                    config_entry.title,
+                    config_entry.entry_id,
                     serial_reader,
                     "ADPS",
                     "Avertissement de Dépassement De Puissance Souscrite",
@@ -268,8 +228,8 @@ async def async_init(
                     state_class=SensorStateClass.MEASUREMENT,
                 ),
                 RegularIntSensor(
-                    title,
-                    uniq_id,
+                    config_entry.title,
+                    config_entry.entry_id,
                     serial_reader,
                     "IMAX",
                     "Intensité maximale appelée",
@@ -277,8 +237,8 @@ async def async_init(
                     native_unit_of_measurement=ELECTRIC_CURRENT_AMPERE,
                 ),
                 RegularIntSensor(
-                    title,
-                    uniq_id,
+                    config_entry.title,
+                    config_entry.entry_id,
                     serial_reader,
                     "PAPP",
                     "Puissance apparente",
@@ -287,8 +247,8 @@ async def async_init(
                     state_class=SensorStateClass.MEASUREMENT,
                 ),
                 RegularStrSensor(
-                    title,
-                    uniq_id,
+                    config_entry.title,
+                    config_entry.entry_id,
                     serial_reader,
                     "HHPHC",
                     "Horaire Heures Pleines Heures Creuses",
@@ -296,8 +256,8 @@ async def async_init(
                     enabled_by_default=False,
                 ),
                 RegularStrSensor(
-                    title,
-                    uniq_id,
+                    config_entry.title,
+                    config_entry.entry_id,
                     serial_reader,
                     "MOTDETAT",
                     "Mo"
@@ -310,6 +270,7 @@ async def async_init(
             _LOGGER.info(
                 "Adding %d sensors for the single phase historic mode", len(sensors)
             )
+    # Add the entities to HA
     if len(sensors) > 0:
         async_add_entities(sensors, False)
 

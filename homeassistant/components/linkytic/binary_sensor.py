@@ -12,7 +12,6 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo, EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 
 from .const import (
     DID_CONSTRUCTOR,
@@ -21,42 +20,17 @@ from .const import (
     DID_DEFAULT_NAME,
     DID_TYPE,
     DOMAIN,
-    SERIAL_READER,
 )
 from .serial_reader import LinkyTICReader
 
 _LOGGER = logging.getLogger(__name__)
 
 
-# legacy setup via YAML
-async def async_setup_platform(
-    hass: HomeAssistant,
-    config: ConfigType,
-    async_add_entities: AddEntitiesCallback,
-    discovery_info: DiscoveryInfoType | None,
-) -> None:
-    """Set up the Linky TIC binary sensor platform."""
-    _LOGGER.debug("YAML config: setting up binary sensor plateform")
-    # Validate discovery_info is not NOne
-    if discovery_info is None:
-        _LOGGER.error(
-            "YAML config: can not init binary sensor plateform with empty discovery info"
-        )
-        return
-    # Init sensors
-    await async_init(
-        title="Linky (YAML config)",
-        uniq_id=None,
-        serial_reader=discovery_info[SERIAL_READER],
-        async_add_entities=async_add_entities,
-    )
-
-
 # config flow setup
 async def async_setup_entry(
     hass: HomeAssistant,
     config_entry: ConfigEntry,
-    async_add_devices: AddEntitiesCallback,
+    async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up entry."""
     _LOGGER.debug("%s: setting up binary sensor plateform", config_entry.title)
@@ -69,41 +43,27 @@ async def async_setup_entry(
             config_entry.title,
         )
         return
-    # Init sensors
-    await async_init(
-        title=config_entry.title,
-        uniq_id=config_entry.entry_id,
-        serial_reader=serial_reader,
-        async_add_entities=async_add_devices,
-    )
-
-
-# factorized init
-async def async_init(
-    title: str,
-    uniq_id: str | None,
-    serial_reader: LinkyTICReader,
-    async_add_entities: AddEntitiesCallback,
-) -> None:
-    """Set up the Linky TIC sensor platform."""
     # Wait a bit for the controller to feed on serial frames (home assistant warns after 10s)
     _LOGGER.debug(
         "%s: waiting at most 9s before setting up binary sensor plateform in order for the async serial reader to have time to parse a full frame",
-        title,
+        config_entry.title,
     )
     for i in range(9):
         await asyncio.sleep(1)
         if serial_reader.has_read_full_frame():
-            _LOGGER.debug("%s: a full frame has been read, initializing sensors", title)
+            _LOGGER.debug(
+                "%s: a full frame has been read, initializing sensors",
+                config_entry.title,
+            )
             break
         if i == 8:
             _LOGGER.warning(
                 "%s: wait time is over but a full frame has yet to be read: initializing sensors anyway",
-                title,
+                config_entry.title,
             )
     # Init sensors
     async_add_entities(
-        [SerialConnectivity(title, uniq_id, serial_reader)],
+        [SerialConnectivity(config_entry.title, config_entry.entry_id, serial_reader)],
         True,
     )
 

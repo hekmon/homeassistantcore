@@ -2,29 +2,14 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
 
-import voluptuous as vol
-
-from homeassistant.components.binary_sensor import DOMAIN as BINARY_SENSOR_DOMAIN
-from homeassistant.components.sensor import DOMAIN as SENSOR_DOMAIN
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EVENT_HOMEASSISTANT_STOP, Platform
 from homeassistant.core import HomeAssistant
-import homeassistant.helpers.config_validation as cv
-from homeassistant.helpers.discovery import async_load_platform
-from homeassistant.helpers.typing import ConfigType
 
 from .const import (  # config flow; legacy
-    CONF_SERIAL_PORT,
-    CONF_STANDARD_MODE,
-    CONF_THREE_PHASE,
-    DEFAULT_SERIAL_PORT,
-    DEFAULT_STANDARD_MODE,
-    DEFAULT_THREE_PHASE,
     DOMAIN,
     OPTIONS_REALTIME,
-    SERIAL_READER,
     SETUP_SERIAL,
     TICMODE_HISTORIC,
 )
@@ -35,67 +20,6 @@ PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR, Platform.SENSOR]
 _LOGGER = logging.getLogger(__name__)
 
 
-# legacy yaml based setup
-CONFIG_SCHEMA = vol.Schema(
-    {
-        DOMAIN: vol.Schema(
-            {
-                vol.Required(CONF_SERIAL_PORT, default=DEFAULT_SERIAL_PORT): cv.string,
-                vol.Required(
-                    CONF_STANDARD_MODE, default=DEFAULT_STANDARD_MODE
-                ): cv.boolean,
-                vol.Required(CONF_THREE_PHASE, default=DEFAULT_THREE_PHASE): cv.boolean,
-            }
-        )
-    },
-    extra=vol.ALLOW_EXTRA,
-)
-
-
-async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    """Set up the Linky TIC component."""
-    _LOGGER.debug("YAML config: init linkytic component with %s", config)
-    # Debug conf
-    conf: Any = config.get(DOMAIN)
-    if not conf:
-        _LOGGER.debug(
-            "YAML config: called without conf, must be config flow config, exiting"
-        )
-        return True
-    _LOGGER.debug("YAML config: serial port: %s", conf[CONF_SERIAL_PORT])
-    _LOGGER.debug("YAML config: standard mode: %s", conf[CONF_STANDARD_MODE])
-    # create the serial controller and start it in a thread
-    _LOGGER.info("Starting the serial reader thread")
-    serial_reader = LinkyTICReader(
-        title="YAML Config (legacy)",
-        port=conf[CONF_SERIAL_PORT],
-        std_mode=conf[CONF_STANDARD_MODE],
-    )
-    serial_reader.start()
-    hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, serial_reader.signalstop)
-    # setup the plateforms
-    hass.async_create_task(
-        async_load_platform(
-            hass, BINARY_SENSOR_DOMAIN, DOMAIN, {SERIAL_READER: serial_reader}, config
-        )
-    )
-    hass.async_create_task(
-        async_load_platform(
-            hass,
-            SENSOR_DOMAIN,
-            DOMAIN,
-            {
-                SERIAL_READER: serial_reader,
-                CONF_THREE_PHASE: conf[CONF_THREE_PHASE],
-                CONF_STANDARD_MODE: conf[CONF_STANDARD_MODE],
-            },
-            config,
-        )
-    )
-    return True
-
-
-# config flow setup
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up linkytic from a config entry."""
     # Create the serial reader thread and start it
@@ -126,7 +50,6 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if unload_ok := await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
         # Remove the related entry
         hass.data[DOMAIN].pop(entry.entry_id)
-
     return unload_ok
 
 

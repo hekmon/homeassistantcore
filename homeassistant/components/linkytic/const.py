@@ -13,25 +13,12 @@ TICMODE_STANDARD = "std"
 TICMODE_STANDARD_LABEL = "Standard"
 
 SETUP_SERIAL = "serial_device"
-SETUP_SERIAL_DEFAULT = "/dev/ttyUSB1"
+SETUP_SERIAL_DEFAULT = "/dev/ttyUSB0"
 SETUP_TICMODE = "tic_mode"
 SETUP_THREEPHASE = "three_phase"
 SETUP_THREEPHASE_DEFAULT = False
 
 OPTIONS_REALTIME = "real_time"
-
-
-# Legacy YAML Configuration
-
-SERIAL_READER = "sr"
-
-CONF_SERIAL_PORT = "serial_port"
-CONF_STANDARD_MODE = "standard_mode"
-CONF_THREE_PHASE = "three-phase"
-
-DEFAULT_SERIAL_PORT = "/dev/ttyUSB0"
-DEFAULT_STANDARD_MODE = False
-DEFAULT_THREE_PHASE = False
 
 
 # Protocol configuration
