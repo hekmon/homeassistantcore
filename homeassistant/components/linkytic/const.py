@@ -37,6 +37,16 @@ MODE_HISTORIC_FIELD_SEPARATOR = b"\x20"
 LINE_END = b"\r\n"
 FRAME_END = b"\r\x03\x02\n"
 
+SHORT_FRAME_DETECTION_TAGS = ["ADIR1", "ADIR2", "ADIR3"]
+SHORT_FRAME_FORCED_UPDATE_TAGS = [
+    "ADIR1",
+    "ADIR2",
+    "ADIR3",
+    "IINST1",
+    "IINST2",
+    "IINST3",
+]
+
 
 # Device identification
 

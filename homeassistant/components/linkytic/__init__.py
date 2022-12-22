@@ -11,6 +11,7 @@ from .const import (  # config flow; legacy
     DOMAIN,
     OPTIONS_REALTIME,
     SETUP_SERIAL,
+    SETUP_THREEPHASE,
     TICMODE_HISTORIC,
 )
 from .serial_reader import LinkyTICReader
@@ -27,6 +28,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         title=entry.title,
         port=entry.data.get(SETUP_SERIAL),
         std_mode=entry.data.get(TICMODE_HISTORIC),
+        three_phase=entry.data.get(SETUP_THREEPHASE),
         real_time=entry.options.get(OPTIONS_REALTIME),
     )
     serial_reader.start()

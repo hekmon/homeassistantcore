@@ -24,6 +24,7 @@ from .const import (
     MODE_STANDARD_BAUD_RATE,
     MODE_STANDARD_FIELD_SEPARATOR,
     PARITY,
+    SHORT_FRAME_DETECTION_TAGS,
     STOPBITS,
 )
 
@@ -34,7 +35,7 @@ class LinkyTICReader(threading.Thread):
     """Implements the reading of a serial Linky TIC."""
 
     def __init__(
-        self, title: str, port, std_mode, real_time: bool | None = False
+        self, title: str, port, std_mode, three_phase, real_time: bool | None = False
     ) -> None:
         """Init the LinkyTIC thread serial reader."""
         # Thread
@@ -50,11 +51,13 @@ class LinkyTICReader(threading.Thread):
             MODE_STANDARD_BAUD_RATE if std_mode else MODE_HISTORIC_BAUD_RATE
         )
         self._std_mode = std_mode
+        self._three_phase = three_phase
         # Run
         self._reader: serial.Serial | None = None
-        self._first_line = True
         self._values: dict[str, dict[str, str | None]] = {}
+        self._first_line = True
         self._frames_read = -1  # we consider that the first frame will be incomplete
+        self._within_short_frame = False
         self.device_identification: dict[str, str | None] = {
             DID_CONSTRUCTOR: None,
             DID_REGNUMBER: None,
@@ -102,25 +105,38 @@ class LinkyTICReader(threading.Thread):
                     exc,
                 )
                 self._reset_state()
-            else:
-                tag = self._parse_line(line)
+                continue
+            # Parse the line
+            tag = self._parse_line(line)
+            if tag is not None:
+                # Handle short burst for tri-phase historic mode
+                if (
+                    self._three_phase
+                    and not self._within_short_frame
+                    and tag in SHORT_FRAME_DETECTION_TAGS
+                ):
+                    _LOGGER.warning(
+                        "Short trame burst detected (%s): switching to forced update mode",
+                        tag,
+                    )
+                    self._within_short_frame = True
                 # If we have a notification callback for this tag, call it
+                try:
+                    notif_callback = self._notif_callbacks[tag]
+                    _LOGGER.debug(
+                        "We have a notification callback for %s: executing", tag
+                    )
+                    forced_update = True if self._within_short_frame else self._realtime
+                    notif_callback(forced_update)
+                except KeyError:
+                    pass
+            # Handle frame end
+            if FRAME_END in line:
+                self._frames_read += 1
+                if self._within_short_frame:
+                    self._within_short_frame = False
                 if tag is not None:
-                    try:
-                        notif_callback = self._notif_callbacks[tag]
-                        _LOGGER.debug(
-                            "We have a notification callback for %s: executing", tag
-                        )
-                        notif_callback(
-                            self._realtime
-                        )  # indicate target if the real time option is on or not for it to act accordingly
-                    except KeyError:
-                        pass
-                # Handle frames counter
-                if FRAME_END in line:
-                    self._frames_read += 1
-                    if tag is not None:
-                        _LOGGER.debug("End of frame, last tag read: %s", tag)
+                    _LOGGER.debug("End of frame, last tag read: %s", tag)
         # Stop flag as been activated
         _LOGGER.info("Thread stop: closing the serial connection")
         if self._reader:
@@ -169,9 +185,10 @@ class LinkyTICReader(threading.Thread):
         """Reinitialize the controller (by nullifying it) and wait 5s for other methods to re start init after a pause."""
         _LOGGER.debug("Resetting serial reader state and wait 10s")
         self._reader = None
-        self._first_line = True
         self._values = {}
+        self._first_line = True
         self._frames_read = -1
+        self._within_short_frame = False
         self.device_identification = {
             DID_CONSTRUCTOR: None,
             DID_REGNUMBER: None,
