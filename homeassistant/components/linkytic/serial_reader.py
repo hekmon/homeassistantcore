@@ -25,6 +25,7 @@ from .const import (
     MODE_STANDARD_FIELD_SEPARATOR,
     PARITY,
     SHORT_FRAME_DETECTION_TAGS,
+    SHORT_FRAME_FORCED_UPDATE_TAGS,
     STOPBITS,
 )
 
@@ -130,7 +131,12 @@ class LinkyTICReader(threading.Thread):
                     _LOGGER.debug(
                         "We have a notification callback for %s: executing", tag
                     )
-                    forced_update = True if self._within_short_frame else self._realtime
+                    forced_update = (
+                        True
+                        if self._within_short_frame
+                        and tag in SHORT_FRAME_FORCED_UPDATE_TAGS
+                        else self._realtime
+                    )
                     notif_callback(forced_update)
                 except KeyError:
                     pass
