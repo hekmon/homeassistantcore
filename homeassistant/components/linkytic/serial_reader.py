@@ -110,7 +110,7 @@ class LinkyTICReader(threading.Thread):
             # Parse the line
             tag = self._parse_line(line)
             if tag is not None:
-                # Mark this tag as seen for end of frame cleanup
+                # Mark this tag as seen for end of frame cache cleanup
                 self._tags_seen.append(tag)
                 # Handle short burst for tri-phase historic mode
                 if (
@@ -142,19 +142,7 @@ class LinkyTICReader(threading.Thread):
                 else:
                     # regular long frame
                     self._frames_read += 1
-                    # cleanup to allow some sensors to get back to undefined/unavailable if they are not present in the frame anymore
-                    for (
-                        cached_tag
-                    ) in (
-                        self._values.keys()  # pylint: disable=consider-using-dict-items,consider-iterating-dictionary
-                    ):
-                        if cached_tag not in self._tags_seen:
-                            _LOGGER.debug(
-                                "tag %s was present in cache but has not been seen in previous frame: removing from cache",
-                                tag,
-                            )
-                            del self._values[cached_tag]
-                    self._tags_seen = []
+                    self._cleanup_cache()
                 if tag is not None:
                     _LOGGER.debug("End of frame, last tag read: %s", tag)
         # Stop flag as been activated
@@ -180,6 +168,28 @@ class LinkyTICReader(threading.Thread):
         """Setter to update serial reader options."""
         _LOGGER.warning("%s: new real time option value: %s", self._title, real_time)
         self._realtime = real_time
+
+    def _cleanup_cache(self):
+        """Call to cleanup the data cache to allow some sensors to get back to undefined/unavailable if they are not present in the last frame."""
+        for (
+            cached_tag
+        ) in (
+            self._values.keys()  # pylint: disable=consider-using-dict-items,consider-iterating-dictionary
+        ):
+            if cached_tag not in self._tags_seen:
+                _LOGGER.debug(
+                    "tag %s was present in cache but has not been seen in previous frame: removing from cache",
+                    cached_tag,
+                )
+                # Clean serial controller data cache for this tag
+                del self._values[cached_tag]
+                # Inform entity of a new value available (None) if in push mode
+                try:
+                    notif_callback = self._notif_callbacks[cached_tag]
+                    notif_callback(self._realtime)
+                except KeyError:
+                    pass
+        self._tags_seen = []
 
     def _open_serial(self):
         """Create (and open) the serial connection."""
