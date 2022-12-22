@@ -321,6 +321,16 @@ async def async_setup_entry(
                     native_unit_of_measurement=POWER_WATT,  # documentation says unit is Watt but description talks about VoltAmp :/
                 )
             )
+            sensors.append(
+                RegularStrSensor(
+                    config_entry.title,
+                    config_entry.entry_id,
+                    serial_reader,
+                    "PPOT",
+                    "Présence des potentiels",
+                    category=EntityCategory.DIAGNOSTIC,
+                )
+            )
             # Burst sensors
             sensors.append(
                 RegularIntSensor(
@@ -398,16 +408,6 @@ async def async_setup_entry(
                     "Intensité maximale appelée",
                     device_class=SensorDeviceClass.CURRENT,
                     native_unit_of_measurement=ELECTRIC_CURRENT_AMPERE,
-                )
-            )
-            sensors.append(
-                RegularStrSensor(
-                    config_entry.title,
-                    config_entry.entry_id,
-                    serial_reader,
-                    "PPOT",
-                    "Présence des potentiels",
-                    category=EntityCategory.DIAGNOSTIC,
                 )
             )
             _LOGGER.info(
