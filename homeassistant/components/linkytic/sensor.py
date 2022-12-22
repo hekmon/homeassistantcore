@@ -92,7 +92,9 @@ async def async_setup_entry(
         else:
             # single phase
             sensors = [
-                ADCOSensor(config_entry.title, config_entry.entry_id, serial_reader),
+                ADCOSensor(
+                    config_entry.title, config_entry.entry_id, serial_reader
+                ),  # needs to be the first for ADS parsing
                 RegularStrSensor(
                     config_entry.title,
                     config_entry.entry_id,
@@ -302,6 +304,8 @@ class ADCOSensor(SensorEntity):
         self._tag = "ADCO"
         self._device_uniq_id = uniq_id
         self._last_value: str | None = None
+        # We need to parse the ADS value first thing to have correct values for the device identification
+        self.update()
 
     @property
     def device_info(self) -> DeviceInfo:
