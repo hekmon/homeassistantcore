@@ -58,6 +58,7 @@ class LinkyTICReader(threading.Thread):
         self._first_line = True
         self._frames_read = -1  # we consider that the first frame will be incomplete
         self._within_short_frame = False
+        self._tags_seen: list[str] = []
         self.device_identification: dict[str, str | None] = {
             DID_CONSTRUCTOR: None,
             DID_REGNUMBER: None,
@@ -109,6 +110,8 @@ class LinkyTICReader(threading.Thread):
             # Parse the line
             tag = self._parse_line(line)
             if tag is not None:
+                # Mark this tag as seen for end of frame cleanup
+                self._tags_seen.append(tag)
                 # Handle short burst for tri-phase historic mode
                 if (
                     not self._std_mode
@@ -133,9 +136,25 @@ class LinkyTICReader(threading.Thread):
                     pass
             # Handle frame end
             if FRAME_END in line:
-                self._frames_read += 1
                 if self._within_short_frame:
+                    # burst / short frame (exceptional)
                     self._within_short_frame = False
+                else:
+                    # regular long frame
+                    self._frames_read += 1
+                    # cleanup to allow some sensors to get back to undefined/unavailable if they are not present in the frame anymore
+                    for (
+                        cached_tag
+                    ) in (
+                        self._values.keys()  # pylint: disable=consider-using-dict-items,consider-iterating-dictionary
+                    ):
+                        if cached_tag not in self._tags_seen:
+                            _LOGGER.debug(
+                                "tag %s was present in cache but has not been seen in previous frame: removing from cache",
+                                tag,
+                            )
+                            del self._values[cached_tag]
+                    self._tags_seen = []
                 if tag is not None:
                     _LOGGER.debug("End of frame, last tag read: %s", tag)
         # Stop flag as been activated
