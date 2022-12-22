@@ -61,7 +61,7 @@ class LinkyTICReader(threading.Thread):
             DID_YEAR: None,
         }  # will be set by the ADCO sensor
         # Init parent thread class
-        super().__init__(name=title)
+        super().__init__(name=f"LinkyTIC for {title}")
 
     def get_values(self, tag) -> tuple[str | None, str | None]:
         """Get tag value and timestamp from the thread memory cache."""
