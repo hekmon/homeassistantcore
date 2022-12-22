@@ -111,7 +111,8 @@ class LinkyTICReader(threading.Thread):
             if tag is not None:
                 # Handle short burst for tri-phase historic mode
                 if (
-                    self._three_phase
+                    not self._std_mode
+                    and self._three_phase
                     and not self._within_short_frame
                     and tag in SHORT_FRAME_DETECTION_TAGS
                 ):
