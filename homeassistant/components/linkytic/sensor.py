@@ -229,6 +229,7 @@ async def async_setup_entry(
                     device_class=SensorDeviceClass.CURRENT,
                     native_unit_of_measurement=ELECTRIC_CURRENT_AMPERE,
                     state_class=SensorStateClass.MEASUREMENT,
+                    register_callback=True,
                 ),
                 RegularIntSensor(
                     config_entry.title,
@@ -611,8 +612,7 @@ class RegularIntSensor(SensorEntity):
         """Receive a notification from the serial reader when our tag has been read on the wire."""
         if not realtime_option:
             _LOGGER.debug(
-                "%s: received a push notification for new %s data but user has not activated real time: skipping",
-                self._title,
+                "received a push notification for new %s data but user has not activated real time: skipping",
                 self._tag,
             )
             if not self._attr_should_poll:
@@ -622,8 +622,7 @@ class RegularIntSensor(SensorEntity):
             return
         # Realtime activated by user
         _LOGGER.debug(
-            "%s: received a push notification for new %s data and user has activated real time: scheduling ha update",
-            self._title,
+            "received a push notification for new %s data and user has activated real time: scheduling ha update",
             self._tag,
         )
         if self._attr_should_poll:
