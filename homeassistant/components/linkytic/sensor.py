@@ -14,6 +14,7 @@ from homeassistant.const import (
     ELECTRIC_CURRENT_AMPERE,
     ENERGY_WATT_HOUR,
     POWER_VOLT_AMPERE,
+    POWER_WATT,
 )
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity import DeviceInfo, EntityCategory
@@ -84,131 +85,285 @@ async def async_setup_entry(
         )
     else:
         # historic mode
-        if bool(config_entry.data.get(SETUP_THREEPHASE)):
-            _LOGGER.error(
-                "%s: three-phase historic mode is not supported (yet ?): no entities will be spawned",
+        sensors = [
+            ADCOSensor(
+                config_entry.title, config_entry.entry_id, serial_reader
+            ),  # needs to be the first for ADS parsing
+            RegularStrSensor(
                 config_entry.title,
-            )
-        else:
-            # single phase
-            sensors = [
-                ADCOSensor(
-                    config_entry.title, config_entry.entry_id, serial_reader
-                ),  # needs to be the first for ADS parsing
-                RegularStrSensor(
-                    config_entry.title,
-                    config_entry.entry_id,
-                    serial_reader,
-                    "OPTARIF",
-                    "Option tarifaire choisie",
-                    "mdi:cash-check",
-                    category=EntityCategory.CONFIG,
-                ),
+                config_entry.entry_id,
+                serial_reader,
+                "OPTARIF",
+                "Option tarifaire choisie",
+                "mdi:cash-check",
+                category=EntityCategory.CONFIG,
+            ),
+            RegularIntSensor(
+                config_entry.title,
+                config_entry.entry_id,
+                serial_reader,
+                "ISOUSC",
+                "Intensité souscrite",
+                category=EntityCategory.CONFIG,
+                device_class=SensorDeviceClass.CURRENT,
+                native_unit_of_measurement=ELECTRIC_CURRENT_AMPERE,
+            ),
+            EnergyIndexSensor(
+                config_entry.title,
+                config_entry.entry_id,
+                serial_reader,
+                "BASE",
+                "Index option Base",
+            ),
+            EnergyIndexSensor(
+                config_entry.title,
+                config_entry.entry_id,
+                serial_reader,
+                "HCHC",
+                "Index option Heures Creuses - Heures Creuses",
+            ),
+            EnergyIndexSensor(
+                config_entry.title,
+                config_entry.entry_id,
+                serial_reader,
+                "HCHP",
+                "Index option Heures Creuses - Heures Pleines",
+            ),
+            EnergyIndexSensor(
+                config_entry.title,
+                config_entry.entry_id,
+                serial_reader,
+                "EJPHN",
+                "Index option EJP - Heures Normal"
+                + "es",  # workaround for codespell in HA pre commit hook
+            ),
+            EnergyIndexSensor(
+                config_entry.title,
+                config_entry.entry_id,
+                serial_reader,
+                "EJPHPM",
+                "Index option EJP - Heures de Pointe Mobile",
+            ),
+            EnergyIndexSensor(
+                config_entry.title,
+                config_entry.entry_id,
+                serial_reader,
+                "BBRHCJB",
+                "Index option Tempo - Heures Creuses Jours Bleus",
+            ),
+            EnergyIndexSensor(
+                config_entry.title,
+                config_entry.entry_id,
+                serial_reader,
+                "BBRHPJB",
+                "Index option Tempo - Heures Pleines Jours Bleus",
+            ),
+            EnergyIndexSensor(
+                config_entry.title,
+                config_entry.entry_id,
+                serial_reader,
+                "BBRHCJW",
+                "Index option Tempo - Heures Creuses Jours Blancs",
+            ),
+            EnergyIndexSensor(
+                config_entry.title,
+                config_entry.entry_id,
+                serial_reader,
+                "BBRHPJW",
+                "Index option Tempo - Heures Pleines Jours Blancs",
+            ),
+            EnergyIndexSensor(
+                config_entry.title,
+                config_entry.entry_id,
+                serial_reader,
+                "BBRHCJR",
+                "Index option Tempo - Heures Creuses Jours Rouges",
+            ),
+            EnergyIndexSensor(
+                config_entry.title,
+                config_entry.entry_id,
+                serial_reader,
+                "BBRHPJR",
+                "Index option Tempo - Heures Pleines Jours Rouges",
+            ),
+            PEJPSensor(config_entry.title, config_entry.entry_id, serial_reader),
+            RegularStrSensor(
+                config_entry.title,
+                config_entry.entry_id,
+                serial_reader,
+                "PTEC",
+                "Période Tarifaire en cours",
+                "mdi:calendar-expand-horizontal",
+            ),
+            RegularStrSensor(
+                config_entry.title,
+                config_entry.entry_id,
+                serial_reader,
+                "DEMAIN",
+                "Couleur du lendemain",
+                "mdi:palette",
+            ),
+            RegularIntSensor(
+                config_entry.title,
+                config_entry.entry_id,
+                serial_reader,
+                "PAPP",
+                "Puissance apparente",
+                device_class=SensorDeviceClass.APPARENT_POWER,
+                native_unit_of_measurement=POWER_VOLT_AMPERE,
+                state_class=SensorStateClass.MEASUREMENT,
+                register_callback=True,
+            ),
+            RegularStrSensor(
+                config_entry.title,
+                config_entry.entry_id,
+                serial_reader,
+                "HHPHC",
+                "Horaire Heures Pleines Heures Creuses",
+                "mdi:clock-outline",
+                enabled_by_default=False,
+            ),
+            RegularStrSensor(
+                config_entry.title,
+                config_entry.entry_id,
+                serial_reader,
+                "MOTDETAT",
+                "Mo"
+                + "t d'état du compteur",  # workaround for codespell in HA pre commit hook
+                "mdi:file-word-box-outline",
+                category=EntityCategory.DIAGNOSTIC,
+                enabled_by_default=False,
+            ),
+        ]
+        # Add specific sensors
+        if bool(config_entry.data.get(SETUP_THREEPHASE)):
+            # three-phase - concat specific sensors
+            sensors.append(
                 RegularIntSensor(
                     config_entry.title,
                     config_entry.entry_id,
                     serial_reader,
-                    "ISOUSC",
-                    "Intensité souscrite",
-                    category=EntityCategory.CONFIG,
+                    "IINST1",
+                    "Intensité Instantanée (phase 1)",
                     device_class=SensorDeviceClass.CURRENT,
                     native_unit_of_measurement=ELECTRIC_CURRENT_AMPERE,
-                ),
-                EnergyIndexSensor(
+                    state_class=SensorStateClass.MEASUREMENT,
+                    register_callback=True,
+                )
+            )
+            sensors.append(
+                RegularIntSensor(
                     config_entry.title,
                     config_entry.entry_id,
                     serial_reader,
-                    "BASE",
-                    "Index option Base",
-                ),
-                EnergyIndexSensor(
+                    "IINST2",
+                    "Intensité Instantanée (phase 2)",
+                    device_class=SensorDeviceClass.CURRENT,
+                    native_unit_of_measurement=ELECTRIC_CURRENT_AMPERE,
+                    state_class=SensorStateClass.MEASUREMENT,
+                    register_callback=True,
+                )
+            )
+            sensors.append(
+                RegularIntSensor(
                     config_entry.title,
                     config_entry.entry_id,
                     serial_reader,
-                    "HCHC",
-                    "Index option Heures Creuses - Heures Creuses",
-                ),
-                EnergyIndexSensor(
+                    "IINST3",
+                    "Intensité Instantanée (phase 3)",
+                    device_class=SensorDeviceClass.CURRENT,
+                    native_unit_of_measurement=ELECTRIC_CURRENT_AMPERE,
+                    state_class=SensorStateClass.MEASUREMENT,
+                    register_callback=True,
+                )
+            )
+            sensors.append(
+                RegularIntSensor(
                     config_entry.title,
                     config_entry.entry_id,
                     serial_reader,
-                    "HCHP",
-                    "Index option Heures Creuses - Heures Pleines",
-                ),
-                EnergyIndexSensor(
+                    "IMAX1",
+                    "Intensité maximale appelée (phase 1)",
+                    device_class=SensorDeviceClass.CURRENT,
+                    native_unit_of_measurement=ELECTRIC_CURRENT_AMPERE,
+                )
+            )
+            sensors.append(
+                RegularIntSensor(
                     config_entry.title,
                     config_entry.entry_id,
                     serial_reader,
-                    "EJPHN",
-                    "Index option EJP - Heures Normal"
-                    + "es",  # workaround for codespell in HA pre commit hook
-                ),
-                EnergyIndexSensor(
+                    "IMAX2",
+                    "Intensité maximale appelée (phase 2)",
+                    device_class=SensorDeviceClass.CURRENT,
+                    native_unit_of_measurement=ELECTRIC_CURRENT_AMPERE,
+                )
+            )
+            sensors.append(
+                RegularIntSensor(
                     config_entry.title,
                     config_entry.entry_id,
                     serial_reader,
-                    "EJPHPM",
-                    "Index option EJP - Heures de Pointe Mobile",
-                ),
-                EnergyIndexSensor(
+                    "IMAX3",
+                    "Intensité maximale appelée (phase 3)",
+                    device_class=SensorDeviceClass.CURRENT,
+                    native_unit_of_measurement=ELECTRIC_CURRENT_AMPERE,
+                )
+            )
+            sensors.append(
+                RegularIntSensor(
                     config_entry.title,
                     config_entry.entry_id,
                     serial_reader,
-                    "BBRHCJB",
-                    "Index option Tempo - Heures Creuses Jours Bleus",
-                ),
-                EnergyIndexSensor(
+                    "PMAX",
+                    "Puissance maximale triphasée atteinte (jour n-1)",
+                    device_class=SensorDeviceClass.CURRENT,
+                    native_unit_of_measurement=POWER_WATT,  # documentation says unit is Watt but description talks about VoltAmp :/
+                )
+            )
+            # Burst sensors
+            sensors.append(
+                RegularIntSensor(
                     config_entry.title,
                     config_entry.entry_id,
                     serial_reader,
-                    "BBRHPJB",
-                    "Index option Tempo - Heures Pleines Jours Bleus",
-                ),
-                EnergyIndexSensor(
+                    "ADIR1",
+                    "Avertissement de Dépassement d'intensité de réglage (phase 1)",
+                    device_class=SensorDeviceClass.CURRENT,
+                    native_unit_of_measurement=ELECTRIC_CURRENT_AMPERE,
+                    register_callback=True,
+                )
+            )
+            sensors.append(
+                RegularIntSensor(
                     config_entry.title,
                     config_entry.entry_id,
                     serial_reader,
-                    "BBRHCJW",
-                    "Index option Tempo - Heures Creuses Jours Blancs",
-                ),
-                EnergyIndexSensor(
+                    "ADIR2",
+                    "Avertissement de Dépassement d'intensité de réglage (phase 2)",
+                    device_class=SensorDeviceClass.CURRENT,
+                    native_unit_of_measurement=ELECTRIC_CURRENT_AMPERE,
+                    register_callback=True,
+                )
+            )
+            sensors.append(
+                RegularIntSensor(
                     config_entry.title,
                     config_entry.entry_id,
                     serial_reader,
-                    "BBRHPJW",
-                    "Index option Tempo - Heures Pleines Jours Blancs",
-                ),
-                EnergyIndexSensor(
-                    config_entry.title,
-                    config_entry.entry_id,
-                    serial_reader,
-                    "BBRHCJR",
-                    "Index option Tempo - Heures Creuses Jours Rouges",
-                ),
-                EnergyIndexSensor(
-                    config_entry.title,
-                    config_entry.entry_id,
-                    serial_reader,
-                    "BBRHPJR",
-                    "Index option Tempo - Heures Pleines Jours Rouges",
-                ),
-                PEJPSensor(config_entry.title, config_entry.entry_id, serial_reader),
-                RegularStrSensor(
-                    config_entry.title,
-                    config_entry.entry_id,
-                    serial_reader,
-                    "PTEC",
-                    "Période Tarifaire en cours",
-                    "mdi:calendar-expand-horizontal",
-                ),
-                RegularStrSensor(
-                    config_entry.title,
-                    config_entry.entry_id,
-                    serial_reader,
-                    "DEMAIN",
-                    "Couleur du lendemain",
-                    "mdi:palette",
-                ),
+                    "ADIR3",
+                    "Avertissement de Dépassement d'intensité de réglage (phase 3)",
+                    device_class=SensorDeviceClass.CURRENT,
+                    native_unit_of_measurement=ELECTRIC_CURRENT_AMPERE,
+                    register_callback=True,
+                )
+            )
+            _LOGGER.info(
+                "Adding %d sensors for the three phase historic mode", len(sensors)
+            )
+        else:
+            # single phase - concat specific sensors
+            sensors.append(
                 RegularIntSensor(
                     config_entry.title,
                     config_entry.entry_id,
@@ -219,7 +374,9 @@ async def async_setup_entry(
                     native_unit_of_measurement=ELECTRIC_CURRENT_AMPERE,
                     state_class=SensorStateClass.MEASUREMENT,
                     register_callback=True,
-                ),
+                )
+            )
+            sensors.append(
                 RegularIntSensor(
                     config_entry.title,
                     config_entry.entry_id,
@@ -230,7 +387,9 @@ async def async_setup_entry(
                     native_unit_of_measurement=ELECTRIC_CURRENT_AMPERE,
                     state_class=SensorStateClass.MEASUREMENT,
                     register_callback=True,
-                ),
+                )
+            )
+            sensors.append(
                 RegularIntSensor(
                     config_entry.title,
                     config_entry.entry_id,
@@ -239,39 +398,18 @@ async def async_setup_entry(
                     "Intensité maximale appelée",
                     device_class=SensorDeviceClass.CURRENT,
                     native_unit_of_measurement=ELECTRIC_CURRENT_AMPERE,
-                ),
-                RegularIntSensor(
-                    config_entry.title,
-                    config_entry.entry_id,
-                    serial_reader,
-                    "PAPP",
-                    "Puissance apparente",
-                    device_class=SensorDeviceClass.APPARENT_POWER,
-                    native_unit_of_measurement=POWER_VOLT_AMPERE,
-                    state_class=SensorStateClass.MEASUREMENT,
-                    register_callback=True,
-                ),
+                )
+            )
+            sensors.append(
                 RegularStrSensor(
                     config_entry.title,
                     config_entry.entry_id,
                     serial_reader,
-                    "HHPHC",
-                    "Horaire Heures Pleines Heures Creuses",
-                    "mdi:clock-outline",
-                    enabled_by_default=False,
-                ),
-                RegularStrSensor(
-                    config_entry.title,
-                    config_entry.entry_id,
-                    serial_reader,
-                    "MOTDETAT",
-                    "Mo"
-                    + "t d'état du compteur",  # workaround for codespell in HA pre commit hook
-                    "mdi:file-word-box-outline",
+                    "PPOT",
+                    "Présence des potentiels",
                     category=EntityCategory.DIAGNOSTIC,
-                    enabled_by_default=False,
-                ),
-            ]
+                )
+            )
             _LOGGER.info(
                 "Adding %d sensors for the single phase historic mode", len(sensors)
             )

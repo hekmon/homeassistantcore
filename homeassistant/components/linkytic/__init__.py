@@ -15,7 +15,7 @@ from .const import (  # config flow; legacy
 )
 from .serial_reader import LinkyTICReader
 
-PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR, Platform.SENSOR]
+PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BINARY_SENSOR]
 
 _LOGGER = logging.getLogger(__name__)
 
