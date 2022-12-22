@@ -1,6 +1,7 @@
 """The linkytic integration serial reader."""
 from __future__ import annotations
 
+from collections.abc import Callable
 import logging
 import threading
 import time
@@ -60,6 +61,7 @@ class LinkyTICReader(threading.Thread):
             DID_TYPE: None,
             DID_YEAR: None,
         }  # will be set by the ADCO sensor
+        self._notif_callbacks: dict[str, Callable[[bool], None]] = {}
         # Init parent thread class
         super().__init__(name=f"LinkyTIC for {title}")
 
@@ -102,6 +104,19 @@ class LinkyTICReader(threading.Thread):
                 self._reset_state()
             else:
                 tag = self._parse_line(line)
+                # If we have a notification callback for this tag, call it
+                if tag is not None:
+                    try:
+                        notif_callback = self._notif_callbacks[tag]
+                        _LOGGER.debug(
+                            "We have a notification callback for %s: executing", tag
+                        )
+                        notif_callback(
+                            self._realtime
+                        )  # indicate target if the real time option is on or not for it to act accordingly
+                    except KeyError:
+                        pass
+                # Handle frames counter
                 if FRAME_END in line:
                     self._frames_read += 1
                     if tag is not None:
@@ -110,6 +125,11 @@ class LinkyTICReader(threading.Thread):
         _LOGGER.info("Thread stop: closing the serial connection")
         if self._reader:
             self._reader.close()
+
+    def register_push_notif(self, tag: str, notif_callback: Callable[[bool], None]):
+        """Call to register a callback notification when a certain tag is parsed."""
+        _LOGGER.debug("Registering a callback for %s tag", tag)
+        self._notif_callbacks[tag] = notif_callback
 
     @callback
     def signalstop(self, event):
