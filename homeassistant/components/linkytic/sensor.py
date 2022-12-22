@@ -218,6 +218,7 @@ async def async_setup_entry(
                     device_class=SensorDeviceClass.CURRENT,
                     native_unit_of_measurement=ELECTRIC_CURRENT_AMPERE,
                     state_class=SensorStateClass.MEASUREMENT,
+                    register_callback=True,
                 ),
                 RegularIntSensor(
                     config_entry.title,
