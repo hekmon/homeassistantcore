@@ -131,12 +131,16 @@ class LinkyTICReader(threading.Thread):
                     _LOGGER.debug(
                         "We have a notification callback for %s: executing", tag
                     )
-                    forced_update = (
-                        True
-                        if self._within_short_frame
+                    forced_update = self._realtime
+                    # Special case for forced_update: historic tree-phase short frame
+                    if (
+                        self._within_short_frame
                         and tag in SHORT_FRAME_FORCED_UPDATE_TAGS
-                        else self._realtime
-                    )
+                    ):
+                        forced_update = True
+                    # Special case for forced_update: historic single-phase ADPS
+                    if tag == "ADPS":
+                        forced_update = True
                     notif_callback(forced_update)
                 except KeyError:
                     pass
