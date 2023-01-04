@@ -7,6 +7,8 @@ import logging
 from homeassistant.components.calendar import CalendarEntity, CalendarEvent
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.device_registry import DeviceEntryType
+from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .api_worker import APIWorker, TempoDay
@@ -14,6 +16,8 @@ from .const import (
     API_VALUE_BLUE,
     API_VALUE_RED,
     API_VALUE_WHITE,
+    DEVICE_MANUFACTURER,
+    DEVICE_MODEL,
     DEVICE_NAME,
     DOMAIN,
     FRANCE_TZ,
@@ -83,18 +87,16 @@ class TempoCalendar(CalendarEntity):
         )
         return events
 
-    # @property
-    # def device_info(self) -> DeviceInfo:
-    #     """Return the device info."""
-    #     return DeviceInfo(
-    #         identifiers={
-    #             # Serial numbers are unique identifiers within a specific domain
-    #             (DOMAIN, self._config_id)
-    #         },
-    #         name=DEVICE_NAME,
-    #         manufacturer=DEVICE_MANUFACTURER,
-    #         model=DEVICE_MODEL,
-    #     )
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return the device info."""
+        return DeviceInfo(
+            entry_type=DeviceEntryType.SERVICE,
+            identifiers={(DOMAIN, self._config_id)},
+            name=DEVICE_NAME,
+            manufacturer=DEVICE_MANUFACTURER,
+            model=DEVICE_MODEL,
+        )
 
     @property
     def event(self) -> CalendarEvent | None:
