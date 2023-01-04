@@ -26,6 +26,7 @@ from .const import (
     API_REQ_TIMEOUT,
     API_TEMPO_ENDPOINT,
     API_TOKEN_ENDPOINT,
+    API_VALUE_BLUE,
     FRANCE_TZ,
 )
 
@@ -166,7 +167,7 @@ class APIWorker(threading.Thread):
             "end_date": end_str[:-2] + ":" + end_str[-2:],
         }
         _LOGGER.debug(
-            "calling %s with start_date as '%s' and end_date as '%s'",
+            "Calling %s with start_date as '%s' and end_date as '%s'",
             API_TEMPO_ENDPOINT,
             start_str,
             end_str,
@@ -229,11 +230,34 @@ class APIWorker(threading.Thread):
                     )
                 )
             except KeyError as key_error:
-                _LOGGER.warning(
-                    "Following day failed to be processed with %s, skipping: %s",
-                    repr(key_error),
-                    tempo_day,
-                )
+                if tempo_day[API_KEY_START] == "2022-12-28T00:00:00+01:00":
+                    # RTE has issued a warning concerning this day missing data on their API: its blue
+                    tempo_days_time.append(
+                        TempoDay(
+                            Start=adjust_tempo_time(
+                                parse_rte_api_datetime(tempo_day[API_KEY_START])
+                            ),
+                            End=adjust_tempo_time(
+                                parse_rte_api_datetime(tempo_day[API_KEY_END])
+                            ),
+                            Value=API_VALUE_BLUE,
+                            Updated=parse_rte_api_datetime(tempo_day[API_KEY_UPDATED]),
+                        )
+                    )
+                    time_days_date.append(
+                        TempoDay(
+                            Start=parse_rte_api_date(tempo_day[API_KEY_START]),
+                            End=parse_rte_api_date(tempo_day[API_KEY_END]),
+                            Value=API_VALUE_BLUE,
+                            Updated=parse_rte_api_datetime(tempo_day[API_KEY_UPDATED]),
+                        )
+                    )
+                else:
+                    _LOGGER.warning(
+                        "Following day failed to be processed with %s, skipping: %s",
+                        repr(key_error),
+                        tempo_day,
+                    )
         # Save data in memory
         self._tempo_days_time = tempo_days_time
         self._tempo_days_date = time_days_date
