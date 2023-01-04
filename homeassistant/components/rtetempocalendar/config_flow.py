@@ -8,8 +8,6 @@ import voluptuous as vol
 
 from homeassistant import config_entries
 from homeassistant.core import callback
-
-# from homeassistant.components.usb import UsbServiceInfo
 from homeassistant.data_entry_flow import FlowResult
 
 from .const import CONFIG_CLIEND_SECRET, CONFIG_CLIENT_ID, DOMAIN, OPTION_ADJUSTED_DAYS

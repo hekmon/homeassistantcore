@@ -18,6 +18,18 @@ DEVICE_MANUFACTURER = "RTE"
 DEVICE_MODEL = "Calendrier Tempo"
 
 
+# Sensors
+
+SENSOR_COLOR_BLUE_NAME = "Bleu"
+SENSOR_COLOR_BLUE_EMOJI = "🔵"
+SENSOR_COLOR_WHITE_NAME = "Blanc"
+SENSOR_COLOR_WHITE_EMOJI = "⚪"
+SENSOR_COLOR_RED_NAME = "Ro" + "uge"  # codespell workaround
+SENSOR_COLOR_RED_EMOJI = "🔴"
+SENSOR_COLOR_UNKNOWN_NAME = "inconnu"
+SENSOR_COLOR_UNKNOWN_EMOJI = "❓"
+
+
 # API
 
 FRANCE_TZ = ZoneInfo("Europe/Paris")

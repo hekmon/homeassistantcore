@@ -63,11 +63,15 @@ class APIWorker(threading.Thread):
         # Init parent thread class
         super().__init__(name="RTE Tempo Calendar API Worker")
 
-    def get_tempo_days(self) -> list[TempoDay]:
-        """Get the tempo days."""
+    def get_calendar_days(self) -> list[TempoDay]:
+        """Get the tempo days suited for calendar."""
         if self.adjusted_days:
             return self._tempo_days_time
         return self._tempo_days_date
+
+    def get_adjusted_days(self) -> list[TempoDay]:
+        """Get the tempo adjusted days."""
+        return self._tempo_days_time
 
     def run(self):
         """Execute thread payload."""

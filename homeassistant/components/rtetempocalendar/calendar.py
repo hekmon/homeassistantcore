@@ -37,7 +37,7 @@ async def async_setup_entry(
 ) -> None:
     """Set up entry."""
     _LOGGER.debug("%s: setting up calendar plateform", config_entry.title)
-    # Retrieve the serial reader object
+    # Retrieve the API Worker object
     try:
         api_worker = hass.data[DOMAIN][config_entry.entry_id]
     except KeyError:
@@ -79,7 +79,7 @@ class TempoCalendar(CalendarEntity):
         end_date: datetime.datetime,
     ) -> list[CalendarEvent]:
         """Return calendar events within a datetime range."""
-        tempo_days = self._api_worker.get_tempo_days()
+        tempo_days = self._api_worker.get_calendar_days()
         events: list[CalendarEvent] = []
         if self._api_worker.adjusted_days:
             # we are dealing with datetimes
@@ -138,12 +138,12 @@ class TempoCalendar(CalendarEntity):
         localized_now = datetime.datetime.now(FRANCE_TZ)
         if self._api_worker.adjusted_days:
             # we are dealing with datetimes
-            for tempo_day in self._api_worker.get_tempo_days():
+            for tempo_day in self._api_worker.get_calendar_days():
                 if tempo_day.Start <= localized_now < tempo_day.End:
                     return forge_calendar_event(tempo_day)
         else:
             # we are dealing with dates (all day events)
-            for tempo_day in self._api_worker.get_tempo_days():
+            for tempo_day in self._api_worker.get_calendar_days():
                 if tempo_day.Start <= localized_now.date() < tempo_day.End:
                     return forge_calendar_event(tempo_day)
         return None
