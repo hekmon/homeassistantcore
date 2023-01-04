@@ -1,16 +1,22 @@
 """Config flow for RTE Tempo Calendar."""
 from __future__ import annotations
 
-# import dataclasses
+import logging
 from typing import Any
 
+from oauthlib.oauth2.rfc6749.errors import OAuth2Error
+from requests.exceptions import RequestException
 import voluptuous as vol
 
 from homeassistant import config_entries
-from homeassistant.core import callback
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.data_entry_flow import FlowResult
 
+from .api_worker import BadRequest, ServerError, UnexpectedError, application_tester
 from .const import CONFIG_CLIEND_SECRET, CONFIG_CLIENT_ID, DOMAIN, OPTION_ADJUSTED_DAYS
+
+_LOGGER = logging.getLogger(__name__)
+
 
 STEP_USER_DATA_SCHEMA = vol.Schema(
     {
@@ -35,13 +41,37 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 step_id="user", data_schema=STEP_USER_DATA_SCHEMA
             )
         # Validate input
-        await self.async_set_unique_id(DOMAIN)  # only one configuration allowed
+        await self.async_set_unique_id(f"{DOMAIN}_{user_input[CONFIG_CLIENT_ID]}")
         self._abort_if_unique_id_configured()
         errors = {}
-        if user_input[CONFIG_CLIENT_ID] == "":
-            errors["base"] = "no_client_id"
-        elif user_input[CONFIG_CLIEND_SECRET] == "":
-            errors["base"] = "no_client_secret"
+        try:
+            client_id = user_input[CONFIG_CLIENT_ID]
+            client_secret = user_input[CONFIG_CLIEND_SECRET]
+            hass = HomeAssistant()
+            await hass.async_add_executor_job(
+                lambda: application_tester(str(client_id), str(client_secret))
+            )
+        except RequestException as request_exception:
+            _LOGGER.error(
+                "Application validation failed: network error: %s", request_exception
+            )
+            errors["base"] = "network_error"
+        except OAuth2Error as oauth_error:
+            _LOGGER.error("Application validation failed: oauth error: %s", oauth_error)
+            errors["base"] = "oauth_error"
+        except BadRequest as http_error:
+            _LOGGER.error(
+                "Application validation failed: bad request error: %s", http_error
+            )
+            errors["base"] = "http_client_error"
+        except ServerError as http_error:
+            _LOGGER.error("Application validation failed: server error: %s", http_error)
+            errors["base"] = "http_server_error"
+        except UnexpectedError as http_error:
+            _LOGGER.error(
+                "Application validation failed: unexpected error: %s", http_error
+            )
+            errors["base"] = "http_unexpected_error"
         else:
             return self.async_create_entry(
                 title=user_input[CONFIG_CLIENT_ID], data=user_input

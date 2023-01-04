@@ -7,6 +7,7 @@ import threading
 from typing import NamedTuple
 
 from oauthlib.oauth2 import BackendApplicationClient, TokenExpiredError
+from oauthlib.oauth2.rfc6749.errors import OAuth2Error
 import requests
 from requests.auth import HTTPBasicAuth
 from requests_oauthlib import OAuth2Session
@@ -161,9 +162,11 @@ class APIWorker(threading.Thread):
         _LOGGER.debug("Requesting access token")
         try:
             self._oauth.fetch_token(token_url=API_TOKEN_ENDPOINT, auth=self._auth)
-        except requests.exceptions.RequestException as requests_exception:
+        except (
+            requests.exceptions.RequestException,
+            OAuth2Error,
+        ) as requests_exception:
             _LOGGER.error("Fetching OAuth2 access token failed: %s", requests_exception)
-            return None
 
     def _get_tempo_data(
         self, start: datetime.datetime, end: datetime.datetime
@@ -208,6 +211,9 @@ class APIWorker(threading.Thread):
             handle_api_errors(response)
         except requests.exceptions.RequestException as requests_exception:
             _LOGGER.error("API request failed: %s", requests_exception)
+            return None
+        except OAuth2Error as oauth_execption:
+            _LOGGER.error("API request failed with OAuth2 error: %s", oauth_execption)
             return None
         except (BadRequest, ServerError, UnexpectedError) as http_error:
             _LOGGER.error("API request failed with HTTP error code: %s", http_error)
@@ -293,6 +299,15 @@ def parse_rte_api_date(date: str) -> datetime.date:
     return datetime.date(
         year=day_datetime.year, month=day_datetime.month, day=day_datetime.day
     )
+
+
+def application_tester(client_id: str, client_secret: str):
+    """Test application credentials against the API."""
+    auth = HTTPBasicAuth(client_id, client_secret)
+    oauth = OAuth2Session(client=BackendApplicationClient(client_id=client_id))
+    oauth.fetch_token(token_url=API_TOKEN_ENDPOINT, auth=auth)
+    response = oauth.get(API_TEMPO_ENDPOINT, timeout=API_REQ_TIMEOUT)
+    handle_api_errors(response)
 
 
 def handle_api_errors(response: requests.Response):
