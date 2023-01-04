@@ -9,7 +9,7 @@ from homeassistant.components.application_credentials import (
     ClientCredential,
     async_import_client_credential,
 )
-from homeassistant.components.rtetempocalendar.const import (
+from homeassistant.components.rte_tempo.const import (
     DOMAIN,
     OAUTH2_AUTHORIZE,
     OAUTH2_TOKEN,
@@ -42,7 +42,7 @@ async def test_full_flow(
 ) -> None:
     """Check full flow."""
     result = await hass.config_entries.flow.async_init(
-        "rtetempocalendar", context={"source": config_entries.SOURCE_USER}
+        "rte_tempo", context={"source": config_entries.SOURCE_USER}
     )
     state = config_entry_oauth2_flow._encode_jwt(
         hass,
@@ -74,7 +74,7 @@ async def test_full_flow(
     )
 
     with patch(
-        "homeassistant.components.rtetempocalendar.async_setup_entry", return_value=True
+        "homeassistant.components.rte_tempo.async_setup_entry", return_value=True
     ) as mock_setup:
         await hass.config_entries.flow.async_configure(result["flow_id"])
 
