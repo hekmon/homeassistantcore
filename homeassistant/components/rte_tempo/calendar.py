@@ -24,6 +24,12 @@ from .const import (
     DEVICE_NAME,
     DOMAIN,
     FRANCE_TZ,
+    SENSOR_COLOR_BLUE_EMOJI,
+    SENSOR_COLOR_BLUE_NAME,
+    SENSOR_COLOR_RED_EMOJI,
+    SENSOR_COLOR_RED_NAME,
+    SENSOR_COLOR_WHITE_EMOJI,
+    SENSOR_COLOR_WHITE_NAME,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -164,9 +170,9 @@ def forge_calendar_event(tempo_day: TempoDay):
 def forge_calendar_event_summary(value: str) -> str:
     """Forge a calendar event summary from a tempo day value."""
     if value == API_VALUE_RED:
-        return "Jour Tempo Ro" + "uge 🔴"  # codespell workaround
+        return f"Jour Tempo {SENSOR_COLOR_RED_NAME} {SENSOR_COLOR_RED_EMOJI}"
     if value == API_VALUE_WHITE:
-        return "Jour Tempo Blanc ⚪"
+        return f"Jour Tempo {SENSOR_COLOR_WHITE_NAME} {SENSOR_COLOR_WHITE_EMOJI}"
     if value == API_VALUE_BLUE:
-        return "Jour Tempo Bleu 🔵"
+        return f"Jour Tempo {SENSOR_COLOR_BLUE_NAME} {SENSOR_COLOR_BLUE_EMOJI}"
     return f"Jour Tempo inconnu ({value})"
