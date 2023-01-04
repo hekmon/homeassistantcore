@@ -15,6 +15,7 @@ from homeassistant.core import callback
 
 from .const import (
     API_DATE_FORMAT,
+    API_HOUR_OF_CHANGE,
     API_KEY_END,
     API_KEY_ERROR,
     API_KEY_ERROR_DESC,
@@ -267,7 +268,7 @@ class APIWorker(threading.Thread):
 
 def adjust_tempo_time(date: datetime.datetime) -> datetime.datetime:
     """RTE API give midnight to midnight date time while it actually goes from 6 to 6 AM."""
-    return date + datetime.timedelta(hours=6)
+    return date + datetime.timedelta(hours=API_HOUR_OF_CHANGE)
 
 
 def parse_rte_api_datetime(date: str) -> datetime.datetime:
