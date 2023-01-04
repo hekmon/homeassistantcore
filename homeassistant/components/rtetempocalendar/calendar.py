@@ -9,8 +9,8 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .api_worker import APIWorker
-from .const import DOMAIN
+from .api_worker import APIWorker, TempoDay
+from .const import API_VALUE_BLUE, API_VALUE_RED, API_VALUE_WHITE, DOMAIN, FRANCE_TZ
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -57,15 +57,11 @@ class TempoCalendar(CalendarEntity):
         events: list[CalendarEvent] = []
         for tempo_day in self._api_worker.tempo_days:
             if tempo_day.Start >= start_date and tempo_day.End <= end_date:
-                events.append(
-                    CalendarEvent(
-                        start=tempo_day.Start,
-                        end=tempo_day.End,
-                        summary=f"tempo {tempo_day.Value} day",
-                        description=f"Mis à jour à {tempo_day.Updated}",
-                        uid=f"{DOMAIN}_{tempo_day.Start.year}_{tempo_day.Start.month}_{tempo_day.Start.day}",
-                    )
-                )
+                events.append(forge_calendar_event(tempo_day))
+            elif tempo_day.Start < start_date < tempo_day.End < end_date:
+                events.append(forge_calendar_event(tempo_day))
+            elif start_date < tempo_day.Start < end_date < tempo_day.End:
+                events.append(forge_calendar_event(tempo_day))
         _LOGGER.debug(
             "Returning %d events (on %d available) for range %s <> %s",
             len(events),
@@ -74,3 +70,36 @@ class TempoCalendar(CalendarEntity):
             end_date,
         )
         return events
+
+    @property
+    def event(self) -> CalendarEvent | None:
+        """Return the next upcoming event."""
+        if len(self._api_worker.tempo_days) == 0:
+            return None
+        localized_now = datetime.datetime.now(FRANCE_TZ)
+        tempo_day = self._api_worker.tempo_days[0]
+        if tempo_day.Start > localized_now:
+            return forge_calendar_event(tempo_day)
+        return None
+
+
+def forge_calendar_event(tempo_day: TempoDay):
+    """Forge a Home Assistant Calendar Event from a Tempo day."""
+    return CalendarEvent(
+        start=tempo_day.Start,
+        end=tempo_day.End,
+        summary=forge_summary(tempo_day.Value),
+        description=f"Mis à jour le {tempo_day.Updated}",
+        uid=f"{DOMAIN}_{tempo_day.Start.year}_{tempo_day.Start.month}_{tempo_day.Start.day}",
+    )
+
+
+def forge_summary(value: str) -> str:
+    """Forge a calendar event summary from a tempo day value."""
+    if value == API_VALUE_RED:
+        return "Jour Tempo Ro" + "uge 🔴"  # codespell workaround
+    if value == API_VALUE_WHITE:
+        return "Jour Tempo Blanc ⚪"
+    if value == API_VALUE_BLUE:
+        return "Jour Tempo Bleu 🔵"
+    return f"Jour tempo inconnu ({value})"

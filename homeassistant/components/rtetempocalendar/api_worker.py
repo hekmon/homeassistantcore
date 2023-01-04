@@ -76,7 +76,6 @@ class APIWorker(threading.Thread):
             )
             # Wait depending on last result fetched
             wait_time = self._compute_wait_time(localized_now, end)
-            _LOGGER.debug("waiting %s seconds before next API call", wait_time)
             stop = self._stopevent.wait(float(wait_time.seconds))
         # stopping thread
         _LOGGER.info("Thread stopped")
