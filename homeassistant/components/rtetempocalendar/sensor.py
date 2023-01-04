@@ -74,6 +74,7 @@ async def async_setup_entry(
         DaysUsed(config_entry.entry_id, api_worker, API_VALUE_BLUE),
         DaysUsed(config_entry.entry_id, api_worker, API_VALUE_WHITE),
         DaysUsed(config_entry.entry_id, api_worker, API_VALUE_RED),
+        NextCycleTime(config_entry.entry_id),
     ]
     # Add the entities to HA
     async_add_entities(sensors, True)
@@ -252,7 +253,7 @@ class NextColorTime(SensorEntity):
     _attr_device_class = SensorDeviceClass.TIMESTAMP
 
     def __init__(self, config_id: str) -> None:
-        """Initialize the Current Color Sensor."""
+        """Initialize the Next Color Time Remaining Sensor."""
         # Generic entity properties
         self._attr_unique_id = f"{DOMAIN}_{config_id}_next_color_change"
         # Sensor entity properties
@@ -463,3 +464,55 @@ class DaysUsed(SensorEntity):
             self._attr_native_value = nb_red_days
         else:
             raise Exception(f"invalid color {self._color}")
+
+
+class NextCycleTime(SensorEntity):
+    """Next Cycle Time Remaining Sensor Entity."""
+
+    # Generic properties
+    _attr_has_entity_name = True
+    _attr_attribution = API_ATTRIBUTION
+    _attr_name = "Cycle Prochaine réinitialisation"
+    # Sensor properties
+    _attr_device_class = SensorDeviceClass.TIMESTAMP
+
+    def __init__(self, config_id: str) -> None:
+        """Initialize the Cycle Time Remaining Sensor."""
+        # Generic entity properties
+        self._attr_unique_id = f"{DOMAIN}_{config_id}_next_cycle_reinit"
+        # Sensor entity properties
+        self._attr_native_value: datetime.datetime | None = None
+        # RTE Tempo Calendar entity properties
+        self._config_id = config_id
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return the device info."""
+        return DeviceInfo(
+            entry_type=DeviceEntryType.SERVICE,
+            identifiers={(DOMAIN, self._config_id)},
+            name=DEVICE_NAME,
+            manufacturer=DEVICE_MANUFACTURER,
+            model=DEVICE_MODEL,
+        )
+
+    @callback
+    def update(self):
+        """Update the value of the sensor from the thread object memory cache."""
+        today = datetime.datetime.today()
+        if today.month >= CYCLE_START_MONTH and today.day >= CYCLE_START_DAY:
+            self._attr_native_value = datetime.datetime(
+                year=today.year + 1,
+                month=CYCLE_START_MONTH,
+                day=CYCLE_START_DAY,
+                hour=HOUR_OF_CHANGE,
+                tzinfo=FRANCE_TZ,
+            )
+        else:
+            self._attr_native_value = datetime.datetime(
+                year=today.year,
+                month=CYCLE_START_MONTH,
+                day=CYCLE_START_DAY,
+                hour=HOUR_OF_CHANGE,
+                tzinfo=FRANCE_TZ,
+            )
