@@ -7,7 +7,7 @@ import threading
 from typing import NamedTuple
 
 from oauthlib.oauth2 import BackendApplicationClient, TokenExpiredError
-from requests import Response
+import requests
 from requests.auth import HTTPBasicAuth
 from requests_oauthlib import OAuth2Session
 
@@ -158,12 +158,16 @@ class APIWorker(threading.Thread):
         return wait_time
 
     def _get_access_token(self):
-        _LOGGER.debug("requesting access token")
-        self._oauth.fetch_token(token_url=API_TOKEN_ENDPOINT, auth=self._auth)
+        _LOGGER.debug("Requesting access token")
+        try:
+            self._oauth.fetch_token(token_url=API_TOKEN_ENDPOINT, auth=self._auth)
+        except requests.exceptions.RequestException as requests_exception:
+            _LOGGER.error("Fetching OAuth2 access token failed: %s", requests_exception)
+            return None
 
     def _get_tempo_data(
         self, start: datetime.datetime, end: datetime.datetime
-    ) -> Response:
+    ) -> requests.Response:
         # prepare params
         start_str = start.strftime(API_DATE_FORMAT)
         end_str = end.strftime(API_DATE_FORMAT)
@@ -199,16 +203,16 @@ class APIWorker(threading.Thread):
         start = localized_date - datetime.timedelta(days=start_before_days)
         end = localized_date + datetime.timedelta(days=end_after_days)
         # Get data
-        response = self._get_tempo_data(start, end)
-        payload = response.json()
-        # Handle API errors
         try:
-            error = payload[API_KEY_ERROR]
-            error_desc = payload[API_KEY_ERROR_DESC]
-            _LOGGER.error("Recovering tempo calendar failed: %s: %s", error, error_desc)
+            response = self._get_tempo_data(start, end)
+            handle_api_errors(response)
+        except requests.exceptions.RequestException as requests_exception:
+            _LOGGER.error("API request failed: %s", requests_exception)
             return None
-        except KeyError:
-            pass
+        except (BadRequest, ServerError, UnexpectedError) as http_error:
+            _LOGGER.error("API request failed with HTTP error code: %s", http_error)
+            return None
+        payload = response.json()
         # Parse datetimes and fix time for start and end dates
         tempo_days_time: list[TempoDay] = []
         time_days_date: list[TempoDay] = []
@@ -289,3 +293,88 @@ def parse_rte_api_date(date: str) -> datetime.date:
     return datetime.date(
         year=day_datetime.year, month=day_datetime.month, day=day_datetime.day
     )
+
+
+def handle_api_errors(response: requests.Response):
+    """Use to handle all errors described in the API documentation."""
+    if response.status_code == 400:
+        try:
+            payload = response.json()
+            raise BadRequest(
+                response.status_code,
+                f"{payload[API_KEY_ERROR]}: {payload[API_KEY_ERROR_DESC]}",
+            )
+        except requests.JSONDecodeError as exc:
+            raise BadRequest(
+                response.status_code, f"Failed to decode JSON payload: {response.text}"
+            ) from exc
+        except KeyError as exc:
+            raise BadRequest(
+                response.status_code,
+                f"Failed to decode access JSON error payload: {response.text}",
+            ) from exc
+    elif response.status_code == 401:
+        raise BadRequest(response.status_code, "Unauthorized")
+    elif response.status_code == 403:
+        raise BadRequest(response.status_code, "Forbidden")
+    elif response.status_code == 404:
+        raise BadRequest(response.status_code, "Not Found")
+    elif response.status_code == 408:
+        raise BadRequest(response.status_code, "Request Time-out")
+    elif response.status_code == 413:
+        raise BadRequest(response.status_code, "Request Entity Too Large")
+    elif response.status_code == 414:
+        raise BadRequest(response.status_code, "Request-URI Too Long")
+    elif response.status_code == 429:
+        raise BadRequest(response.status_code, "Too Many Requests")
+    elif response.status_code == 500:
+        try:
+            payload = response.json()
+            raise ServerError(
+                response.status_code,
+                f"{payload[API_KEY_ERROR]}: {payload[API_KEY_ERROR_DESC]}",
+            )
+        except requests.JSONDecodeError as exc:
+            raise ServerError(
+                response.status_code, f"Failed to decode JSON payload: {response.text}"
+            ) from exc
+        except KeyError as exc:
+            raise ServerError(
+                response.status_code,
+                f"Failed to decode access JSON error payload: {response.text}",
+            ) from exc
+    elif response.status_code == 503:
+        raise ServerError(response.status_code, "Service Unavailable")
+    elif response.status_code == 509:
+        raise ServerError(response.status_code, "Bandwidth Limit Exceeded")
+    elif response.status_code != 200:
+        raise UnexpectedError(
+            response.status_code, f"Unexpected HTTP code: {response.text}"
+        )
+
+
+class BadRequest(Exception):
+    """Represents a API HTTP 4xx error."""
+
+    def __init__(self, code: int, message: str) -> None:
+        """Initialize the BadRequest exception."""
+        self.code = code
+        super().__init__(f"HTTP code {code}: {message}")
+
+
+class ServerError(Exception):
+    """Represents a API HTTP 5xx error."""
+
+    def __init__(self, code: int, message: str) -> None:
+        """Initialize the ServerError exception."""
+        self.code = code
+        super().__init__(f"HTTP code {code}: {message}")
+
+
+class UnexpectedError(Exception):
+    """Represents any HTTP error not described by the API documentation."""
+
+    def __init__(self, code: int, message: str) -> None:
+        """Initialize the UnexpectedError exception."""
+        self.code = code
+        super().__init__(f"HTTP code {code}: {message}")
