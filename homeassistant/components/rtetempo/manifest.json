@@ -1,0 +1,16 @@
+{
+  "domain": "rtetempo",
+  "name": "RTE Tempo",
+  "config_flow": true,
+  "documentation": "https://www.home-assistant.io/integrations/rtetempo",
+  "requirements": [
+    "oauthlib==3.2.2",
+    "requests==2.28.1",
+    "requests-oauthlib==1.3.1"
+  ],
+  "ssdp": [],
+  "zeroconf": [],
+  "homekit": {},
+  "codeowners": ["@hekmon"],
+  "iot_class": "cloud_polling"
+}

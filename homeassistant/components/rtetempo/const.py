@@ -1,7 +1,7 @@
 """Constants for the RTE Tempo Calendar integration."""
 from zoneinfo import ZoneInfo
 
-DOMAIN = "rte_tempo"
+DOMAIN = "rtetempo"
 
 
 # Config Flow

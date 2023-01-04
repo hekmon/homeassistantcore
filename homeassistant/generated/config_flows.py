@@ -390,7 +390,7 @@ FLOWS = {
         "roomba",
         "roon",
         "rpi_power",
-        "rte_tempo",
+        "rtetempo",
         "rtsp_to_webrtc",
         "ruckus_unleashed",
         "ruuvi_gateway",

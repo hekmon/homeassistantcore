@@ -16,7 +16,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Set up rte_tempo from a config entry."""
+    """Set up rtetempo from a config entry."""
     # Create the serial reader thread and start it
     api_worker = APIWorker(
         client_id=str(entry.data.get(CONFIG_CLIENT_ID)),
