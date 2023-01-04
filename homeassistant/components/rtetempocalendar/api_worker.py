@@ -15,7 +15,6 @@ from homeassistant.core import callback
 
 from .const import (
     API_DATE_FORMAT,
-    API_HOUR_OF_CHANGE,
     API_KEY_END,
     API_KEY_ERROR,
     API_KEY_ERROR_DESC,
@@ -29,6 +28,7 @@ from .const import (
     API_TOKEN_ENDPOINT,
     API_VALUE_BLUE,
     FRANCE_TZ,
+    HOUR_OF_CHANGE,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -74,6 +74,10 @@ class APIWorker(threading.Thread):
     def get_adjusted_days(self) -> list[TempoDay]:
         """Get the tempo adjusted days."""
         return self._tempo_days_time
+
+    def get_regular_days(self) -> list[TempoDay]:
+        """Get the tempo adjusted days."""
+        return self._tempo_days_date
 
     def run(self):
         """Execute thread payload."""
@@ -268,7 +272,7 @@ class APIWorker(threading.Thread):
 
 def adjust_tempo_time(date: datetime.datetime) -> datetime.datetime:
     """RTE API give midnight to midnight date time while it actually goes from 6 to 6 AM."""
-    return date + datetime.timedelta(hours=API_HOUR_OF_CHANGE)
+    return date + datetime.timedelta(hours=HOUR_OF_CHANGE)
 
 
 def parse_rte_api_datetime(date: str) -> datetime.datetime:
