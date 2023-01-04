@@ -22,7 +22,7 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
 
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    """Handle a config flow for linkytic."""
+    """Handle a config flow for RTE Tempo Calendar."""
 
     VERSION = 1
 
@@ -44,7 +44,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         elif user_input[CONFIG_CLIEND_SECRET] == "":
             errors["base"] = "no_client_secret"
         else:
-            return self.async_create_entry(title="RTE Tempo Calendar", data=user_input)
+            return self.async_create_entry(
+                title=user_input[CONFIG_CLIENT_ID], data=user_input
+            )
         # Show errors
         return self.async_show_form(
             step_id="user", data_schema=STEP_USER_DATA_SCHEMA, errors=errors

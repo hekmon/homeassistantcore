@@ -53,10 +53,13 @@ async def async_setup_entry(
 class TempoCalendar(CalendarEntity):
     """Create a Home Assistant calendar returning tempo days."""
 
+    # Generic entity properties
+    _attr_has_entity_name = True
+
     def __init__(self, api_worker: APIWorker, config_id) -> None:
         """Initialize the calendar."""
         # Generic entity properties
-        self._attr_name = f"{DEVICE_NAME} Calendrier"
+        self._attr_name = "Calendrier"
         self._attr_unique_id = f"{DOMAIN}_{config_id}_calendar"
         # TempoCalendar properties
         self._api_worker = api_worker
