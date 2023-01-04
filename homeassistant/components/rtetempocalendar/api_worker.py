@@ -4,6 +4,7 @@ from __future__ import annotations
 import datetime
 import logging
 import threading
+from typing import NamedTuple
 
 from oauthlib.oauth2 import BackendApplicationClient, TokenExpiredError
 from requests import Response
@@ -31,6 +32,15 @@ from .const import (
 _LOGGER = logging.getLogger(__name__)
 
 
+class TempoDay(NamedTuple):
+    """Represents a tempo day."""
+
+    Start: datetime.datetime
+    End: datetime.datetime
+    Value: str
+    Updated: datetime.datetime
+
+
 # https://data.rte-france.com/documents/20182/224298/FR_GU_API_Tempo_Like_Supply_Contract_v01.02.pdf
 
 
@@ -47,7 +57,7 @@ class APIWorker(threading.Thread):
             client=BackendApplicationClient(client_id=client_id)
         )
         # Data
-        self._tempo_days: list[dict[str, datetime.datetime | str]] = []
+        self.tempo_days: list[TempoDay] = []
         # Init parent thread class
         super().__init__(name="RTE Tempo Calendar API Worker")
 
@@ -64,11 +74,8 @@ class APIWorker(threading.Thread):
             end = self._update_tempo_days(
                 localized_now, start_before_days=364, end_after_days=2
             )
-            print(end)
-            print(self._tempo_days[-1])
             # Wait depending on last result fetched
             wait_time = self._compute_wait_time(localized_now, end)
-            print(wait_time)
             _LOGGER.debug("waiting %s seconds before next API call", wait_time)
             stop = self._stopevent.wait(float(wait_time.seconds))
         # stopping thread
@@ -185,18 +192,16 @@ class APIWorker(threading.Thread):
         for tempo_day in payload[API_KEY_RESULTS][API_KEY_VALUES]:
             try:
                 fixed_days.append(
-                    {
-                        API_KEY_START: adjust_tempo_time(
+                    TempoDay(
+                        Start=adjust_tempo_time(
                             parse_rte_api_datetime(tempo_day[API_KEY_START])
                         ),
-                        API_KEY_END: adjust_tempo_time(
+                        End=adjust_tempo_time(
                             parse_rte_api_datetime(tempo_day[API_KEY_END])
                         ),
-                        API_KEY_VALUE: tempo_day[API_KEY_VALUE],
-                        API_KEY_UPDATED: parse_rte_api_datetime(
-                            tempo_day[API_KEY_UPDATED]
-                        ),
-                    }
+                        Value=tempo_day[API_KEY_VALUE],
+                        Updated=parse_rte_api_datetime(tempo_day[API_KEY_UPDATED]),
+                    )
                 )
             except KeyError as key_error:
                 _LOGGER.warning(
@@ -205,7 +210,7 @@ class APIWorker(threading.Thread):
                     tempo_day,
                 )
         # Save data in memory
-        self._tempo_days = fixed_days
+        self.tempo_days = fixed_days
         # Return results end date in order for caller to compute next call time
         return parse_rte_api_datetime(payload[API_KEY_RESULTS][API_KEY_END])
 
