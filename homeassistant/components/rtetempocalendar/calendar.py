@@ -98,14 +98,11 @@ class TempoCalendar(CalendarEntity):
 
     @property
     def event(self) -> CalendarEvent | None:
-        """Return the next upcoming event."""
-        if len(self._api_worker.tempo_days) == 0:
-            return None
-        # Get the first event which is either the current day or the next day event
+        """Return the current active event if any."""
         localized_now = datetime.datetime.now(FRANCE_TZ)
-        tempo_day = self._api_worker.tempo_days[0]
-        if tempo_day.Start > localized_now:
-            return forge_calendar_event(tempo_day)
+        for tempo_day in self._api_worker.tempo_days:
+            if tempo_day.Start <= localized_now < tempo_day.End:
+                return forge_calendar_event(tempo_day)
         return None
 
 
