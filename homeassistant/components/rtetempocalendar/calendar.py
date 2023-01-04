@@ -1,6 +1,7 @@
 """RTE Tempo Calendar."""
 from __future__ import annotations
 
+import asyncio
 import datetime
 import logging
 
@@ -14,6 +15,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from .api_worker import APIWorker, TempoDay
 from .const import (
     API_ATTRIBUTION,
+    API_REQ_TIMEOUT,
     API_VALUE_BLUE,
     API_VALUE_RED,
     API_VALUE_WHITE,
@@ -44,6 +46,8 @@ async def async_setup_entry(
             config_entry.title,
         )
         return
+    # Wait request timeout to let API worker get first batch of data before initializing calendar
+    await asyncio.sleep(API_REQ_TIMEOUT)
     # Init sensors
     async_add_entities(
         [TempoCalendar(api_worker, config_entry.entry_id)],
