@@ -1055,6 +1055,8 @@ build.json @home-assistant/supervisor
 /tests/components/rpi_power/ @shenxn @swetoast
 /homeassistant/components/rss_feed_template/ @home-assistant/core
 /tests/components/rss_feed_template/ @home-assistant/core
+/homeassistant/components/rtetempocalendar/ @hekmon
+/tests/components/rtetempocalendar/ @hekmon
 /homeassistant/components/rtsp_to_webrtc/ @allenporter
 /tests/components/rtsp_to_webrtc/ @allenporter
 /homeassistant/components/ruckus_unleashed/ @gabe565 @lanrat
