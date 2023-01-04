@@ -189,12 +189,20 @@ class NextColor(SensorEntity):
         localized_now = datetime.datetime.now(FRANCE_TZ)
         for tempo_day in self._api_worker.get_adjusted_days():
             if localized_now < tempo_day.Start:
+                # Found a match !
+                self._attr_available = True
                 if self._emoji:
                     self._attr_native_value = get_color_emoji(tempo_day.Value)
                 else:
                     self._attr_native_value = get_color_name(tempo_day.Value)
                 return
-        self._attr_native_value = None
+        # Special case for emoji
+        if self._emoji:
+            self._attr_available = True
+            self._attr_native_value = SENSOR_COLOR_UNKNOWN_EMOJI
+        else:
+            self._attr_available = False
+            self._attr_native_value = None
 
 
 def get_color_emoji(value: str) -> str:
