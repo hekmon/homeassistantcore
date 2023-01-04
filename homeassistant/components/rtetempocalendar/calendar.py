@@ -13,6 +13,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .api_worker import APIWorker, TempoDay
 from .const import (
+    API_ATTRIBUTION,
     API_VALUE_BLUE,
     API_VALUE_RED,
     API_VALUE_WHITE,
@@ -55,6 +56,7 @@ class TempoCalendar(CalendarEntity):
 
     # Generic entity properties
     _attr_has_entity_name = True
+    _attr_attribution = API_ATTRIBUTION
 
     def __init__(self, api_worker: APIWorker, config_id) -> None:
         """Initialize the calendar."""

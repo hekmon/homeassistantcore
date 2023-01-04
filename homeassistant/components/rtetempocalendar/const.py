@@ -10,14 +10,14 @@ CONFIG_CLIENT_ID = "client_id"
 CONFIG_CLIEND_SECRET = "client_secret"
 
 
-# Device
+# Service Device
 
 DEVICE_NAME = "RTE Tempo"
 DEVICE_MANUFACTURER = "RTE"
 DEVICE_MODEL = "Calendrier Tempo"
 
 
-# API Worker
+# API
 
 FRANCE_TZ = ZoneInfo("Europe/Paris")
 API_DOMAIN = "https://digital.iservices.rte-france.com"
@@ -38,3 +38,4 @@ API_KEY_UPDATED = "updated_date"
 API_VALUE_RED = "RED"
 API_VALUE_WHITE = "WHITE"
 API_VALUE_BLUE = "BLUE"
+API_ATTRIBUTION = f"Données fournies par {API_DOMAIN}"
