@@ -35,8 +35,8 @@ _LOGGER = logging.getLogger(__name__)
 class TempoDay(NamedTuple):
     """Represents a tempo day."""
 
-    Start: datetime.datetime
-    End: datetime.datetime
+    Start: datetime.datetime | datetime.date
+    End: datetime.datetime | datetime.date
     Value: str
     Updated: datetime.datetime
 
@@ -47,7 +47,7 @@ class TempoDay(NamedTuple):
 class APIWorker(threading.Thread):
     """API Worker is an autonomous thread querying, parsing an caching the RTE Tempo calendar API in an optimal way."""
 
-    def __init__(self, client_id: str, client_secret: str) -> None:
+    def __init__(self, client_id: str, client_secret: str, adjusted_days: bool) -> None:
         """Initialize the API Worker thread."""
         # Thread
         self._stopevent = threading.Event()
@@ -56,10 +56,18 @@ class APIWorker(threading.Thread):
         self._oauth = OAuth2Session(
             client=BackendApplicationClient(client_id=client_id)
         )
-        # Data
-        self.tempo_days: list[TempoDay] = []
+        # Worker
+        self._tempo_days_time: list[TempoDay] = []
+        self._tempo_days_date: list[TempoDay] = []
+        self.adjusted_days: bool = adjusted_days
         # Init parent thread class
         super().__init__(name="RTE Tempo Calendar API Worker")
+
+    def get_tempo_days(self) -> list[TempoDay]:
+        """Get the tempo days."""
+        if self.adjusted_days:
+            return self._tempo_days_time
+        return self._tempo_days_date
 
     def run(self):
         """Execute thread payload."""
@@ -88,6 +96,11 @@ class APIWorker(threading.Thread):
             event,
         )
         self._stopevent.set()
+
+    def update_options(self, adjusted_days: bool):
+        """Setter to update serial reader options."""
+        _LOGGER.debug("New adjusted days option value: %s", adjusted_days)
+        self.adjusted_days = adjusted_days
 
     def _compute_wait_time(
         self, localized_now: datetime.datetime, data_end: datetime.datetime | None
@@ -187,10 +200,11 @@ class APIWorker(threading.Thread):
         except KeyError:
             pass
         # Parse datetimes and fix time for start and end dates
-        fixed_days = []
+        tempo_days_time: list[TempoDay] = []
+        time_days_date: list[TempoDay] = []
         for tempo_day in payload[API_KEY_RESULTS][API_KEY_VALUES]:
             try:
-                fixed_days.append(
+                tempo_days_time.append(
                     TempoDay(
                         Start=adjust_tempo_time(
                             parse_rte_api_datetime(tempo_day[API_KEY_START])
@@ -202,6 +216,14 @@ class APIWorker(threading.Thread):
                         Updated=parse_rte_api_datetime(tempo_day[API_KEY_UPDATED]),
                     )
                 )
+                time_days_date.append(
+                    TempoDay(
+                        Start=parse_rte_api_date(tempo_day[API_KEY_START]),
+                        End=parse_rte_api_date(tempo_day[API_KEY_END]),
+                        Value=tempo_day[API_KEY_VALUE],
+                        Updated=parse_rte_api_datetime(tempo_day[API_KEY_UPDATED]),
+                    )
+                )
             except KeyError as key_error:
                 _LOGGER.warning(
                     "Following day failed to be processed with %s, skipping: %s",
@@ -209,7 +231,8 @@ class APIWorker(threading.Thread):
                     tempo_day,
                 )
         # Save data in memory
-        self.tempo_days = fixed_days
+        self._tempo_days_time = tempo_days_time
+        self._tempo_days_date = time_days_date
         # Return results end date in order for caller to compute next call time
         return parse_rte_api_datetime(payload[API_KEY_RESULTS][API_KEY_END])
 
@@ -225,3 +248,11 @@ def parse_rte_api_datetime(date: str) -> datetime.datetime:
         date[:-3] + date[-2:]
     )  # switch to a python format (remove ':' from rte tzinfo)
     return datetime.datetime.strptime(date, API_DATE_FORMAT)
+
+
+def parse_rte_api_date(date: str) -> datetime.date:
+    """RTE API has a date format incompatible with python parsing."""
+    day_datetime = parse_rte_api_datetime(date)
+    return datetime.date(
+        year=day_datetime.year, month=day_datetime.month, day=day_datetime.day
+    )

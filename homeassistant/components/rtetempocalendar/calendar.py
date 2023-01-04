@@ -75,18 +75,43 @@ class TempoCalendar(CalendarEntity):
         end_date: datetime.datetime,
     ) -> list[CalendarEvent]:
         """Return calendar events within a datetime range."""
+        tempo_days = self._api_worker.get_tempo_days()
         events: list[CalendarEvent] = []
-        for tempo_day in self._api_worker.tempo_days:
-            if tempo_day.Start >= start_date and tempo_day.End <= end_date:
-                events.append(forge_calendar_event(tempo_day))
-            elif tempo_day.Start < start_date < tempo_day.End < end_date:
-                events.append(forge_calendar_event(tempo_day))
-            elif start_date < tempo_day.Start < end_date < tempo_day.End:
-                events.append(forge_calendar_event(tempo_day))
+        if self._api_worker.adjusted_days:
+            # we are dealing with datetimes
+            for tempo_day in tempo_days:
+                if tempo_day.Start >= start_date and tempo_day.End <= end_date:
+                    events.append(forge_calendar_event(tempo_day))
+                elif tempo_day.Start < start_date < tempo_day.End < end_date:
+                    events.append(forge_calendar_event(tempo_day))
+                elif start_date < tempo_day.Start < end_date < tempo_day.End:
+                    events.append(forge_calendar_event(tempo_day))
+        else:
+            # we are dealing with dates (all day events)
+            for tempo_day in tempo_days:
+                if (
+                    tempo_day.Start >= start_date.date()
+                    and tempo_day.End <= end_date.date()
+                ):
+                    events.append(forge_calendar_event(tempo_day))
+                elif (
+                    tempo_day.Start
+                    < start_date.date()
+                    < tempo_day.End
+                    < end_date.date()
+                ):
+                    events.append(forge_calendar_event(tempo_day))
+                elif (
+                    start_date.date()
+                    < tempo_day.Start
+                    < end_date.date()
+                    < tempo_day.End
+                ):
+                    events.append(forge_calendar_event(tempo_day))
         _LOGGER.debug(
             "Returning %d events (on %d available) for range %s <> %s",
             len(events),
-            len(self._api_worker.tempo_days),
+            len(tempo_days),
             start_date,
             end_date,
         )
@@ -107,9 +132,16 @@ class TempoCalendar(CalendarEntity):
     def event(self) -> CalendarEvent | None:
         """Return the current active event if any."""
         localized_now = datetime.datetime.now(FRANCE_TZ)
-        for tempo_day in self._api_worker.tempo_days:
-            if tempo_day.Start <= localized_now < tempo_day.End:
-                return forge_calendar_event(tempo_day)
+        if self._api_worker.adjusted_days:
+            # we are dealing with datetimes
+            for tempo_day in self._api_worker.get_tempo_days():
+                if tempo_day.Start <= localized_now < tempo_day.End:
+                    return forge_calendar_event(tempo_day)
+        else:
+            # we are dealing with dates (all day events)
+            for tempo_day in self._api_worker.get_tempo_days():
+                if tempo_day.Start <= localized_now.date() < tempo_day.End:
+                    return forge_calendar_event(tempo_day)
         return None
 
 
@@ -118,13 +150,14 @@ def forge_calendar_event(tempo_day: TempoDay):
     return CalendarEvent(
         start=tempo_day.Start,
         end=tempo_day.End,
-        summary=forge_summary(tempo_day.Value),
+        summary=forge_calendar_event_summary(tempo_day.Value),
         description=f"Mis à jour le {tempo_day.Updated}",
+        location="France",
         uid=f"{DOMAIN}_{tempo_day.Start.year}_{tempo_day.Start.month}_{tempo_day.Start.day}",
     )
 
 
-def forge_summary(value: str) -> str:
+def forge_calendar_event_summary(value: str) -> str:
     """Forge a calendar event summary from a tempo day value."""
     if value == API_VALUE_RED:
         return "Jour Tempo Ro" + "uge 🔴"  # codespell workaround

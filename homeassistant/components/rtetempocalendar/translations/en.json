@@ -16,5 +16,15 @@
                 "description": "Please fill in your RTE API [Application credentials](https://data.rte-france.com/group/guest/apps)"
             }
         }
+    },
+    "options": {
+        "step": {
+            "init": {
+                "data": {
+                    "adjusted_days": "Adjust calendar events to use real hours (06:00) instead of all day"
+                },
+                "title": "RTE Tempo Calendar - Options"
+            }
+        }
     }
 }

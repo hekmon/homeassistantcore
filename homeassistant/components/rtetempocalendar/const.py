@@ -8,6 +8,7 @@ DOMAIN = "rtetempocalendar"
 
 CONFIG_CLIENT_ID = "client_id"
 CONFIG_CLIEND_SECRET = "client_secret"
+OPTION_ADJUSTED_DAYS = "adjusted_days"
 
 
 # Service Device
