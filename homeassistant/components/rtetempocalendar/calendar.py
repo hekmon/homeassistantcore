@@ -10,7 +10,14 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .api_worker import APIWorker, TempoDay
-from .const import API_VALUE_BLUE, API_VALUE_RED, API_VALUE_WHITE, DOMAIN, FRANCE_TZ
+from .const import (
+    API_VALUE_BLUE,
+    API_VALUE_RED,
+    API_VALUE_WHITE,
+    DEVICE_NAME,
+    DOMAIN,
+    FRANCE_TZ,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -34,7 +41,7 @@ async def async_setup_entry(
         return
     # Init sensors
     async_add_entities(
-        [TempoCalendar(api_worker)],
+        [TempoCalendar(api_worker, config_entry.entry_id)],
         True,
     )
 
@@ -42,9 +49,14 @@ async def async_setup_entry(
 class TempoCalendar(CalendarEntity):
     """Create a Home Assistant calendar returning tempo days."""
 
-    def __init__(self, api_worker: APIWorker) -> None:
+    def __init__(self, api_worker: APIWorker, config_id) -> None:
         """Initialize the calendar."""
+        # Generic entity properties
+        self._attr_name = f"{DEVICE_NAME} Calendrier"
+        self._attr_unique_id = f"{DOMAIN}_{config_id}_calendar"
+        # TempoCalendar properties
         self._api_worker = api_worker
+        self._config_id = config_id
         super().__init__()
 
     async def async_get_events(
@@ -71,11 +83,25 @@ class TempoCalendar(CalendarEntity):
         )
         return events
 
+    # @property
+    # def device_info(self) -> DeviceInfo:
+    #     """Return the device info."""
+    #     return DeviceInfo(
+    #         identifiers={
+    #             # Serial numbers are unique identifiers within a specific domain
+    #             (DOMAIN, self._config_id)
+    #         },
+    #         name=DEVICE_NAME,
+    #         manufacturer=DEVICE_MANUFACTURER,
+    #         model=DEVICE_MODEL,
+    #     )
+
     @property
     def event(self) -> CalendarEvent | None:
         """Return the next upcoming event."""
         if len(self._api_worker.tempo_days) == 0:
             return None
+        # Get the first event which is either the current day or the next day event
         localized_now = datetime.datetime.now(FRANCE_TZ)
         tempo_day = self._api_worker.tempo_days[0]
         if tempo_day.Start > localized_now:
@@ -102,4 +128,4 @@ def forge_summary(value: str) -> str:
         return "Jour Tempo Blanc ⚪"
     if value == API_VALUE_BLUE:
         return "Jour Tempo Bleu 🔵"
-    return f"Jour tempo inconnu ({value})"
+    return f"Jour Tempo inconnu ({value})"

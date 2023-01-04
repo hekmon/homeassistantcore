@@ -10,6 +10,13 @@ CONFIG_CLIENT_ID = "client_id"
 CONFIG_CLIEND_SECRET = "client_secret"
 
 
+# Device
+
+DEVICE_NAME = "RTE Tempo"
+DEVICE_MANUFACTURER = "RTE"
+DEVICE_MODEL = "Calendrier Tempo"
+
+
 # API Worker
 
 FRANCE_TZ = ZoneInfo("Europe/Paris")
