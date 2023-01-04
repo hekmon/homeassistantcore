@@ -106,16 +106,16 @@ class TempoCalendar(CalendarEntity):
                     events.append(forge_calendar_event(tempo_day))
                 elif (
                     tempo_day.Start
-                    < start_date.date()
-                    < tempo_day.End
-                    < end_date.date()
+                    <= start_date.date()
+                    <= tempo_day.End
+                    <= end_date.date()
                 ):
                     events.append(forge_calendar_event(tempo_day))
                 elif (
                     start_date.date()
-                    < tempo_day.Start
-                    < end_date.date()
-                    < tempo_day.End
+                    <= tempo_day.Start
+                    <= end_date.date()
+                    <= tempo_day.End
                 ):
                     events.append(forge_calendar_event(tempo_day))
         _LOGGER.debug(
