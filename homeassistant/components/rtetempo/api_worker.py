@@ -124,6 +124,12 @@ class APIWorker(threading.Thread):
             localized_now.date(), datetime.time(tzinfo=FRANCE_TZ)
         )
         diff = data_end - localized_today
+        _LOGGER.debug(
+            "computing wait time based on today(%s) - data_end(%s) = diff(%s)",
+            localized_now,
+            data_end,
+            diff,
+        )
         if diff.days == 2:
             # wait until next day
             tomorrow = localized_now + datetime.timedelta(days=1)
@@ -131,6 +137,7 @@ class APIWorker(threading.Thread):
                 year=tomorrow.year,
                 month=tomorrow.month,
                 day=tomorrow.day,
+                hour=HOUR_OF_CHANGE,
                 tzinfo=localized_now.tzinfo,
             )
             wait_time = next_call - localized_now
