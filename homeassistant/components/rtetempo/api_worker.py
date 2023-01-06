@@ -64,7 +64,7 @@ class APIWorker(threading.Thread):
         self._tempo_days_date: list[TempoDay] = []
         self.adjusted_days: bool = adjusted_days
         # Init parent thread class
-        super().__init__(name="RTE Tempo Calendar API Worker")
+        super().__init__(name="RTE Tempo API Worker")
 
     def get_calendar_days(self) -> list[TempoDay]:
         """Get the tempo days suited for calendar."""
