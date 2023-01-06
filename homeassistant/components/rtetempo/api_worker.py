@@ -204,7 +204,7 @@ class APIWorker(threading.Thread):
 
     def _update_tempo_days(
         self, reftime: datetime.datetime, start_before_days: int, end_after_days: int
-    ) -> datetime.datetime | None:
+    ) -> datetime.date | None:
         # nullify time but keep date and tz
         localized_date = datetime.datetime.combine(
             reftime.date(), datetime.time(tzinfo=FRANCE_TZ)
@@ -283,8 +283,12 @@ class APIWorker(threading.Thread):
         # Save data in memory
         self._tempo_days_time = tempo_days_time
         self._tempo_days_date = time_days_date
-        # Return results end date in order for caller to compute next call time
-        return parse_rte_api_datetime(payload[API_KEY_RESULTS][API_KEY_END])
+        # Return results last end date in order for caller to compute next call time (remove adjustment)
+        if len(self._tempo_days_time) > 0:
+            return self._tempo_days_time[0].End - datetime.timedelta(
+                hours=HOUR_OF_CHANGE
+            )
+        return None
 
 
 def adjust_tempo_time(date: datetime.datetime) -> datetime.datetime:
