@@ -125,7 +125,7 @@ class APIWorker(threading.Thread):
         )
         diff = data_end - localized_today
         _LOGGER.debug(
-            "computing wait time based on today(%s) - data_end(%s) = diff(%s)",
+            "Computing wait time based on today(%s) - data_end(%s) = diff(%s)",
             localized_now,
             data_end,
             diff,
