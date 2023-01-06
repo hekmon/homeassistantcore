@@ -220,7 +220,7 @@ class APIWorker(threading.Thread):
 
     def _update_tempo_days(
         self, reftime: datetime.datetime, start_before_days: int, end_after_days: int
-    ) -> datetime.date | None:
+    ) -> datetime.datetime | None:
         # nullify time but keep date and tz
         localized_date = datetime.datetime.combine(
             reftime.date(), datetime.time(tzinfo=FRANCE_TZ)
