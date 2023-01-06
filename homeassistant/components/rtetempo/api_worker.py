@@ -283,11 +283,23 @@ class APIWorker(threading.Thread):
         # Save data in memory
         self._tempo_days_time = tempo_days_time
         self._tempo_days_date = time_days_date
+<<<<<<< HEAD
         # Return results last end date in order for caller to compute next call time (remove adjustment)
         if len(self._tempo_days_time) > 0:
             return self._tempo_days_time[0].End - datetime.timedelta(
                 hours=HOUR_OF_CHANGE
             )
+=======
+        # Return results last end date in order for caller to compute next call time
+        if len(self._tempo_days_date) > 0:
+            newest_result = self._tempo_days_date[0].End
+            return datetime.datetime(
+                year=newest_result.year,
+                month=newest_result.month,
+                day=newest_result.day,
+                tzinfo=FRANCE_TZ,
+            ) - datetime.timedelta(hours=HOUR_OF_CHANGE)
+>>>>>>> fbb65ea694 (fix wait time)
         return None
 
 
