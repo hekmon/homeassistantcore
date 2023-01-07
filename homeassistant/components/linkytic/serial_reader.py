@@ -176,16 +176,14 @@ class LinkyTICReader(threading.Thread):
 
     def update_options(self, real_time: bool):
         """Setter to update serial reader options."""
-        _LOGGER.warning("%s: new real time option value: %s", self._title, real_time)
+        _LOGGER.debug("%s: new real time option value: %s", self._title, real_time)
         self._realtime = real_time
 
     def _cleanup_cache(self):
         """Call to cleanup the data cache to allow some sensors to get back to undefined/unavailable if they are not present in the last frame."""
-        for (
-            cached_tag
-        ) in (
-            self._values.keys()  # pylint: disable=consider-using-dict-items,consider-iterating-dictionary
-        ):
+        for cached_tag in list(
+            self._values.keys()
+        ):  # pylint: disable=consider-using-dict-items,consider-iterating-dictionary
             if cached_tag not in self._tags_seen:
                 _LOGGER.debug(
                     "tag %s was present in cache but has not been seen in previous frame: removing from cache",
@@ -204,8 +202,8 @@ class LinkyTICReader(threading.Thread):
     def _open_serial(self):
         """Create (and open) the serial connection."""
         try:
-            self._reader = serial.Serial(
-                port=self._port,
+            self._reader = serial.serial_for_url(
+                url=self._port,
                 baudrate=self._baudrate,
                 bytesize=BYTESIZE,
                 parity=PARITY,
@@ -378,8 +376,8 @@ def linky_tic_tester(device: str, std_mode: bool) -> None:
     """Before starting the thread, this method can help validate configuration by opening the serial communication and read a line. It returns None if everything went well or a string describing the error."""
     # Open connection
     try:
-        serial_reader = serial.Serial(
-            port=device,
+        serial_reader = serial.serial_for_url(
+            url=device,
             baudrate=MODE_STANDARD_BAUD_RATE if std_mode else MODE_HISTORIC_BAUD_RATE,
             bytesize=BYTESIZE,
             parity=PARITY,

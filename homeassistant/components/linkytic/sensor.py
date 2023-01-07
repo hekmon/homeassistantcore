@@ -47,7 +47,7 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Modern (thru config entry) sensors setup."""
-    _LOGGER.debug("%s: setting up binary sensor plateform", config_entry.title)
+    _LOGGER.debug("%s: setting up sensor plateform", config_entry.title)
     # Retrieve the serial reader object
     try:
         serial_reader = hass.data[DOMAIN][config_entry.entry_id]
@@ -429,9 +429,10 @@ class ADCOSensor(SensorEntity):
 
     # Generic properties
     #   https://developers.home-assistant.io/docs/core/entity#generic-properties
+    _attr_has_entity_name = True
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_name = (
-        f"{DID_DEFAULT_NAME} A" + "dress" + "e du compteur"
+        "A" + "dress" + "e du compteur"
     )  # workaround for codespell in HA pre commit hook
     _attr_should_poll = True
     _attr_icon = "mdi:tag"
@@ -575,6 +576,7 @@ class RegularStrSensor(SensorEntity):
 
     # Generic entity properties
     #   https://developers.home-assistant.io/docs/core/entity#generic-properties
+    _attr_has_entity_name = True
     _attr_should_poll = True
 
     def __init__(
@@ -597,7 +599,7 @@ class RegularStrSensor(SensorEntity):
         self._serial_controller = serial_reader
         self._tag = tag.upper()
         # Generic Entity properties
-        self._attr_name = f"{DID_DEFAULT_NAME} {name}"
+        self._attr_name = name
         self._attr_unique_id = f"{DOMAIN}_{config_uniq_id}_{tag.lower()}"
         if icon:
             self._attr_icon = icon
@@ -660,6 +662,7 @@ class RegularIntSensor(SensorEntity):
 
     # Generic entity properties
     #   https://developers.home-assistant.io/docs/core/entity#generic-properties
+    _attr_has_entity_name = True
     _attr_should_poll = True
 
     def __init__(
@@ -691,7 +694,7 @@ class RegularIntSensor(SensorEntity):
         # Generic Entity properties
         if category:
             self._attr_entity_category = category
-        self._attr_name = f"{DID_DEFAULT_NAME} {name}"
+        self._attr_name = name
         self._attr_unique_id = f"{DOMAIN}_{config_uniq_id}_{tag.lower()}"
         if icon:
             self._attr_icon = icon
@@ -812,7 +815,8 @@ class PEJPSensor(SensorEntity):
 
     # Generic properties
     #   https://developers.home-assistant.io/docs/core/entity#generic-properties
-    _attr_name = f"{DID_DEFAULT_NAME} Préavis Début EJP"
+    _attr_has_entity_name = True
+    _attr_name = "Préavis Début EJP"
     _attr_should_poll = True
     _attr_icon = "mdi:clock-start"
 
