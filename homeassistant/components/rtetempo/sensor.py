@@ -248,7 +248,6 @@ class NextColorTime(SensorEntity):
 
     # Generic properties
     _attr_has_entity_name = True
-    _attr_attribution = API_ATTRIBUTION
     _attr_name = "Prochain changement de couleur"
     # Sensor properties
     _attr_device_class = SensorDeviceClass.TIMESTAMP
@@ -478,7 +477,6 @@ class NextCycleTime(SensorEntity):
 
     # Generic properties
     _attr_has_entity_name = True
-    _attr_attribution = API_ATTRIBUTION
     _attr_name = "Cycle Prochaine réinitialisation"
     # Sensor properties
     _attr_device_class = SensorDeviceClass.TIMESTAMP
@@ -533,7 +531,6 @@ class OffPeakTime(SensorEntity):
 
     # Generic properties
     _attr_has_entity_name = True
-    _attr_attribution = API_ATTRIBUTION
     _attr_name = "Passage en heures creuses"
     # Sensor properties
     _attr_device_class = SensorDeviceClass.TIMESTAMP
@@ -560,7 +557,7 @@ class OffPeakTime(SensorEntity):
 
     @callback
     def update(self) -> None:
-        """Update the value of the sensor from the thread object memory cache."""
+        """Update/Recompute the value of the sensor."""
         localized_now = datetime.datetime.now(tz=FRANCE_TZ)
         if localized_now.hour >= HOUR_OF_CHANGE:
             self._attr_native_value = datetime.datetime(
