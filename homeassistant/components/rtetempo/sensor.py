@@ -76,6 +76,7 @@ async def async_setup_entry(
         DaysUsed(config_entry.entry_id, api_worker, API_VALUE_WHITE),
         DaysUsed(config_entry.entry_id, api_worker, API_VALUE_RED),
         NextCycleTime(config_entry.entry_id),
+        OffPeakTime(config_entry.entry_id),
     ]
     # Add the entities to HA
     async_add_entities(sensors, True)
@@ -248,7 +249,7 @@ class NextColorTime(SensorEntity):
 
     # Generic properties
     _attr_has_entity_name = True
-    _attr_name = "Prochain changement de couleur"
+    _attr_name = "Prochaine Couleur (changement)"
     # Sensor properties
     _attr_device_class = SensorDeviceClass.TIMESTAMP
 
@@ -531,7 +532,7 @@ class OffPeakTime(SensorEntity):
 
     # Generic properties
     _attr_has_entity_name = True
-    _attr_name = "Passage en heures creuses"
+    _attr_name = "Heures Creuses (passage)"
     # Sensor properties
     _attr_device_class = SensorDeviceClass.TIMESTAMP
 
