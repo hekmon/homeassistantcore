@@ -342,20 +342,24 @@ class DaysLeft(SensorEntity):
     def update(self) -> None:
         """Update the value of the sensor from the thread object memory cache."""
         # First compute the number of days this cycle has (handles leap year)
-        today = datetime.datetime.today()
-        if today.month < CYCLE_START_MONTH:
+        localized_now = datetime.datetime.now(tz=FRANCE_TZ)
+        if localized_now.month < CYCLE_START_MONTH:
             cycle_start = datetime.date(
-                year=today.year - 1, month=CYCLE_START_MONTH, day=CYCLE_START_DAY
+                year=localized_now.year - 1,
+                month=CYCLE_START_MONTH,
+                day=CYCLE_START_DAY,
             )
             cycle_end = datetime.date(
-                year=today.year, month=CYCLE_START_MONTH, day=CYCLE_START_DAY
+                year=localized_now.year, month=CYCLE_START_MONTH, day=CYCLE_START_DAY
             )
         else:
             cycle_start = datetime.date(
-                year=today.year, month=CYCLE_START_MONTH, day=CYCLE_START_DAY
+                year=localized_now.year, month=CYCLE_START_MONTH, day=CYCLE_START_DAY
             )
             cycle_end = datetime.date(
-                year=today.year + 1, month=CYCLE_START_MONTH, day=CYCLE_START_DAY
+                year=localized_now.year + 1,
+                month=CYCLE_START_MONTH,
+                day=CYCLE_START_DAY,
             )
         total_days = (cycle_end - cycle_start).days
         # Now compute how many blue days there is in this cycle
@@ -432,14 +436,16 @@ class DaysUsed(SensorEntity):
     def update(self) -> None:
         """Update the value of the sensor from the thread object memory cache."""
         # First compute the number of days this cycle has (handles leap year)
-        today = datetime.datetime.today()
-        if today.month < CYCLE_START_MONTH:
+        localized_now = datetime.datetime.now(tz=FRANCE_TZ)
+        if localized_now.month < CYCLE_START_MONTH:
             cycle_start = datetime.date(
-                year=today.year - 1, month=CYCLE_START_MONTH, day=CYCLE_START_DAY
+                year=localized_now.year - 1,
+                month=CYCLE_START_MONTH,
+                day=CYCLE_START_DAY,
             )
         else:
             cycle_start = datetime.date(
-                year=today.year, month=CYCLE_START_MONTH, day=CYCLE_START_DAY
+                year=localized_now.year, month=CYCLE_START_MONTH, day=CYCLE_START_DAY
             )
         # Count already defined days since the beginning of the cycle
         nb_blue_days = 0
