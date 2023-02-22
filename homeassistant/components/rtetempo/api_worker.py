@@ -29,8 +29,12 @@ from .const import (
     API_TEMPO_ENDPOINT,
     API_TOKEN_ENDPOINT,
     API_VALUE_BLUE,
+    CONFIRM_CHECK,
+    CONFIRM_HOUR,
+    CONFIRM_MIN,
     FRANCE_TZ,
     HOUR_OF_CHANGE,
+    USER_AGENT,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -132,23 +136,53 @@ class APIWorker(threading.Thread):
             diff,
         )
         if diff.days == 2:
-            # we have next day color, wait until next change
-            tomorrow = localized_now + datetime.timedelta(days=1)
-            next_call = datetime.datetime(
-                year=tomorrow.year,
-                month=tomorrow.month,
-                day=tomorrow.day,
-                hour=HOUR_OF_CHANGE,
+            # we have next day color, check if we need to confirm or wait until tomorrow
+            ref_confirmation = datetime.datetime(
+                year=localized_now.year,
+                month=localized_now.month,
+                day=localized_now.day,
+                hour=CONFIRM_HOUR,
+                minute=CONFIRM_MIN,
                 tzinfo=localized_now.tzinfo,
             )
-            wait_time = next_call - localized_now
-            wait_time = datetime.timedelta(
-                seconds=random.randrange(wait_time.seconds, wait_time.seconds + 900)
-            )
-            _LOGGER.info(
-                "We got next day color, waiting until tomorrow to get futur next day color (wait time is %s)",
-                wait_time,
-            )
+            if localized_now > ref_confirmation:
+                # we are past the confirmation hour, wait until tomorrow
+                tomorrow = localized_now + datetime.timedelta(days=1)
+                next_call = datetime.datetime(
+                    year=tomorrow.year,
+                    month=tomorrow.month,
+                    day=tomorrow.day,
+                    hour=HOUR_OF_CHANGE,
+                    tzinfo=localized_now.tzinfo,
+                )
+                wait_time = next_call - localized_now
+                wait_time = datetime.timedelta(
+                    seconds=random.randrange(wait_time.seconds, wait_time.seconds + 900)
+                )
+                _LOGGER.info(
+                    "We got next day color, waiting until tomorrow to get futur next day color (wait time is %s)",
+                    wait_time,
+                )
+            else:
+                # we are not past the confirmation hour yet, wait until 2nd confirmation call
+                tomorrow = localized_now + datetime.timedelta(days=1)
+                next_call = datetime.datetime(
+                    year=tomorrow.year,
+                    month=tomorrow.month,
+                    day=tomorrow.day,
+                    hour=CONFIRM_CHECK,
+                    tzinfo=localized_now.tzinfo,
+                )
+                wait_time = next_call - localized_now
+                wait_time = datetime.timedelta(
+                    seconds=random.randrange(
+                        wait_time.seconds - 900, wait_time.seconds + 900
+                    )  # +- 15min
+                )
+                _LOGGER.info(
+                    "We got next day color but we it is too early to be sure: waiting until confirmation hour to get futur next day color (wait time is %s)",
+                    wait_time,
+                )
         elif diff.days == 1:
             # we do not have next day color yet
             if localized_now.hour < 6:
@@ -216,6 +250,10 @@ class APIWorker(threading.Thread):
             "start_date": start_str[:-2] + ":" + start_str[-2:],
             "end_date": end_str[:-2] + ":" + end_str[-2:],
         }
+        headers = {
+            "Accept": "application/json",
+            "User-Agent": USER_AGENT,
+        }
         _LOGGER.debug(
             "Calling %s with start_date as '%s' and end_date as '%s'",
             API_TEMPO_ENDPOINT,
@@ -225,12 +263,18 @@ class APIWorker(threading.Thread):
         # fetch data
         try:
             return self._oauth.get(
-                API_TEMPO_ENDPOINT, params=params, timeout=API_REQ_TIMEOUT
+                API_TEMPO_ENDPOINT,
+                params=params,
+                timeout=API_REQ_TIMEOUT,
+                headers=headers,
             )
         except TokenExpiredError:
             self._get_access_token()
             return self._oauth.get(
-                API_TEMPO_ENDPOINT, params=params, timeout=API_REQ_TIMEOUT
+                API_TEMPO_ENDPOINT,
+                params=params,
+                timeout=API_REQ_TIMEOUT,
+                headers=headers,
             )
 
     def _update_tempo_days(
@@ -256,7 +300,13 @@ class APIWorker(threading.Thread):
         except (BadRequest, ServerError, UnexpectedError) as http_error:
             _LOGGER.error("API request failed with HTTP error code: %s", http_error)
             return None
-        payload = response.json()
+        try:
+            payload = response.json()
+        except requests.JSONDecodeError as exc:
+            _LOGGER.error(
+                "JSON parsing error on a HTTP 200 request (%s):\n%s", exc, response.text
+            )
+            return None
         # Parse datetimes and fix time for start and end dates
         tempo_days_time: list[TempoDay] = []
         time_days_date: list[TempoDay] = []

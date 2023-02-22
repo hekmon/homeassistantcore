@@ -52,6 +52,7 @@ API_VALUE_RED = "RED"
 API_VALUE_WHITE = "WHITE"
 API_VALUE_BLUE = "BLUE"
 API_ATTRIBUTION = "Données fournies par data.rte-france.com"
+USER_AGENT = "github.com/hekmon/rtetempo v1.2.2"
 
 
 # Tempo def
@@ -62,3 +63,6 @@ TOTAL_RED_DAYS = 22
 TOTAL_WHITE_DAYS = 43
 CYCLE_START_MONTH = 9
 CYCLE_START_DAY = 1
+CONFIRM_HOUR = 10
+CONFIRM_MIN = 40
+CONFIRM_CHECK = 11
