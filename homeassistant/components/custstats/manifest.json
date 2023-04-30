@@ -1,6 +1,6 @@
 {
   "domain": "custstats",
-  "name": "Custom Integrations Stats",
+  "name": "Custom Integration Stats",
   "codeowners": ["@hekmon"],
   "config_flow": true,
   "dependencies": [],
