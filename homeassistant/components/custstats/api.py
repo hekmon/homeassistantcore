@@ -17,7 +17,6 @@ class StatsAPI:
 
     def __init__(self, session: aiohttp.ClientSession) -> None:
         """Initialize the API controller."""
-        _LOGGER.debug("initializing API controller singleton")
         self.websession: aiohttp.ClientSession = session
 
     async def get_stats(self, integration_name: str):
