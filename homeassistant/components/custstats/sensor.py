@@ -1,6 +1,7 @@
 """Sensors for Custom Integrations Statistics integration."""
 from __future__ import annotations
 
+from datetime import timedelta
 import logging
 
 from homeassistant.components.sensor import SensorEntity, SensorStateClass
@@ -12,6 +13,8 @@ from .api import StatsAPI
 from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
+
+SCAN_INTERVAL = timedelta(hours=1)
 
 
 # config flow setup
