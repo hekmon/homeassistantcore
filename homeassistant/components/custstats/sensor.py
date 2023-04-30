@@ -48,7 +48,7 @@ class IntegrationStats(SensorEntity):
     _attr_icon = "mdi:finance"
     # Sensor properties
     _attr_state_class = SensorStateClass.TOTAL
-    _attr_suggested_display_precision = 0
+    # _attr_suggested_display_precision = 0
 
     def __init__(self, inte_name: str, config_id: str, api: StatsAPI) -> None:
         """Initialize the Current Color Sensor."""
