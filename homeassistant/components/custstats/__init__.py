@@ -4,10 +4,11 @@ from __future__ import annotations
 import logging
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import EVENT_HOMEASSISTANT_STOP, Platform
+from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .api import EntryAPIAccess
+from .api import StatsAPI
 from .const import DOMAIN
 
 PLATFORMS: list[Platform] = [Platform.SENSOR]
@@ -18,15 +19,12 @@ _LOGGER = logging.getLogger(__name__)
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up custstats from a config entry."""
     # Create the serial reader thread and start it
-    api_proxy = EntryAPIAccess(hass, entry)
-    hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, api_proxy.unload)
-    entry.async_on_unload(lambda: api_proxy.unload("config_entry_unload"))
-    # Add the APIProxy to HA and initialize sensors
+    api = StatsAPI(async_get_clientsession(hass))
     try:
-        hass.data[DOMAIN][entry.entry_id] = api_proxy
+        hass.data[DOMAIN][entry.entry_id] = api
     except KeyError:
         hass.data[DOMAIN] = {}
-        hass.data[DOMAIN][entry.entry_id] = api_proxy
+        hass.data[DOMAIN][entry.entry_id] = api
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     # main init done
     return True

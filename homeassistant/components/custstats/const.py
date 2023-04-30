@@ -1,12 +1,13 @@
 """Constants for the Custom Integrations Statistics integration."""
 
-import datetime
+from datetime import timedelta
 
+# Integration
 DOMAIN = "custstats"
+SCAN_INTERVAL = timedelta(hours=1)
 
 # API
 STATS_PAGE = "https://analytics.home-assistant.io/custom_integrations.json"
-REFRESH_INTERVAL = datetime.timedelta(hours=1)
 
 # Config flow
 SETUP_INTEGRATION = "integration_domain"

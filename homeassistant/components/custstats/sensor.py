@@ -5,10 +5,10 @@ import logging
 
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .api import EntryAPIAccess
+from .api import StatsAPI
 from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
@@ -24,17 +24,17 @@ async def async_setup_entry(
     _LOGGER.debug("%s: setting up sensor plateform", config_entry.title)
     # Retrieve the API Worker object
     try:
-        api_proxy = hass.data[DOMAIN][config_entry.entry_id]
+        api = hass.data[DOMAIN][config_entry.entry_id]
     except KeyError:
         _LOGGER.error(
-            "%s: can not calendar: failed to get the API worker object",
+            "%s: can not set up sensors: failed to get the API worker object",
             config_entry.title,
         )
         return
     # Init sensors
-    sensors = [IntegrationStats(config_entry.title, config_entry.entry_id, api_proxy)]
+    sensors = [IntegrationStats(config_entry.title, config_entry.entry_id, api)]
     # Add the entities to HA
-    async_add_entities(sensors, False)
+    async_add_entities(sensors, True)
 
 
 class IntegrationStats(SensorEntity):
@@ -45,9 +45,7 @@ class IntegrationStats(SensorEntity):
     _attr_should_poll = False
     _attr_icon = "mdi:finance"
 
-    def __init__(
-        self, inte_name: str, config_id: str, api_proxy: EntryAPIAccess
-    ) -> None:
+    def __init__(self, inte_name: str, config_id: str, api: StatsAPI) -> None:
         """Initialize the Current Color Sensor."""
         # Generic properties
         self._attr_name = f"{inte_name} installations"
@@ -57,29 +55,22 @@ class IntegrationStats(SensorEntity):
         self._attr_extra_state_attributes: dict[str, str] = {}
         # Custom entity properties
         self._inte_name = inte_name
-        self._api_proxy = api_proxy
-        self._api_proxy.register_entity_callback(
-            self._attr_unique_id, self.data_update_callback
-        )
+        self._api = api
 
-    def data_update_callback(self):
-        """Schedule an update of the sensor and a read of its value (push)."""
-        self.schedule_update_ha_state(force_refresh=True)
-
-    @callback
-    def update(self):
+    async def async_update(self):
         """Update the value of the sensor from the thread object memory cache."""
         # Get stats from cache
-        try:
-            stats = self._api_proxy.get_statistics(self._inte_name)
-        except KeyError:
-            stats = None
+        stats = await self._api.get_stats(self._inte_name)
         if stats is None:
             self._attr_available = False
             self._attr_native_value = None
             self._attr_extra_state_attributes = {}
             return
         # Got them
+        _LOGGER.debug(
+            "stats for '%s' successfully retrieved",
+            self._inte_name,
+        )
         try:
             total = stats["total"]
             versions = stats["versions"]
@@ -94,7 +85,7 @@ class IntegrationStats(SensorEntity):
             return
         # Handle total
         if not isinstance(total, int):
-            _LOGGER.error("Stats total for %s should be int", self._inte_name)
+            _LOGGER.error("Stats total for '%s' should be int", self._inte_name)
             self._attr_available = False
             self._attr_native_value = None
             self._attr_extra_state_attributes = {}
@@ -105,7 +96,9 @@ class IntegrationStats(SensorEntity):
         for version, nb_install in versions.items():
             if not isinstance(nb_install, int):
                 _LOGGER.error(
-                    "Version %s installs for %s should be int", version, self._inte_name
+                    "Version '%s' install stats for '%s' should be int",
+                    version,
+                    self._inte_name,
                 )
                 continue
             self._attr_extra_state_attributes[version] = str(nb_install)

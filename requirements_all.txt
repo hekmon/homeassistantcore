@@ -176,9 +176,6 @@ aioharmony==0.2.10
 # homeassistant.components.homekit_controller
 aiohomekit==2.6.3
 
-# homeassistant.components.custstats
-aiohttp==3.8.4
-
 # homeassistant.components.emulated_hue
 # homeassistant.components.http
 aiohttp_cors==0.7.0
@@ -508,9 +505,6 @@ buienradar==1.0.5
 
 # homeassistant.components.caldav
 caldav==1.2.0
-
-# homeassistant.components.custstats
-certifi==2022.9.24
 
 # homeassistant.components.circuit
 circuit-webhook==1.0.1
@@ -1468,9 +1462,6 @@ pyMetEireann==2021.8.0
 # homeassistant.components.met
 # homeassistant.components.norway_air
 pyMetno==0.9.0
-
-# homeassistant.components.custstats
-pyOpenSSL==23.1.0
 
 # homeassistant.components.rfxtrx
 pyRFXtrx==0.30.1
