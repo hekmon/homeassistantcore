@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import logging
 
-from homeassistant.components.sensor import SensorEntity
+from homeassistant.components.sensor import SensorEntity, SensorStateClass
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -42,8 +42,9 @@ class IntegrationStats(SensorEntity):
 
     # Generic properties
     _attr_has_entity_name = True
-    _attr_should_poll = False
     _attr_icon = "mdi:finance"
+    # Sensor properties
+    _attr_state_class = SensorStateClass.TOTAL
 
     def __init__(self, inte_name: str, config_id: str, api: StatsAPI) -> None:
         """Initialize the Current Color Sensor."""
