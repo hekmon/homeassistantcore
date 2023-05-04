@@ -9,6 +9,8 @@ import logging
 
 import aiohttp
 
+from homeassistant.core import Event
+
 from .const import FRANCE_TZ, TRYBATEC_API_DOMAIN, USER_AGENT
 from .tlsfix import TrybatecBadTLS
 
@@ -96,9 +98,9 @@ class TrybatecAPI:
         # Token still valid
         return
 
-    def cleanup(self):
+    def cleanup(self, event: Event):
         """Properly stop the controller."""
-        _LOGGER.debug("cleaning up")
+        _LOGGER.debug("received event %s: cleaning up custom local CA store", event)
         self.sslhelper.cleanup()
 
     async def get_devices(self) -> dict:
