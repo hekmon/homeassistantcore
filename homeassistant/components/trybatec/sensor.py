@@ -187,6 +187,11 @@ class Consumption(SensorEntity):
                     self._log_prefix,
                 )
                 return
+            _LOGGER.debug(
+                "%s: data is too old (%s): proceeding with API update",
+                self._log_prefix,
+                self._last_valid_value_time,
+            )
         # Get data from API
         try:
             data = await self._api.get_data(self._device_id, self._fluid_id)
@@ -195,10 +200,16 @@ class Consumption(SensorEntity):
                 "%s: failed to recover data from API: %s", self._log_prefix, exc
             )
             return
+        if len(data) == 0:
+            _LOGGER.debug("%s: no data recovered", self._log_prefix)
+            self._attr_native_value = None
+            self._attr_available = False
+            return
         _LOGGER.debug("%s: recovered data: %s", self._log_prefix, data)
         # Parse data
         self._attr_native_value = None
         self._attr_available = False
+        # self._attr_available = True
         # self._last_valid_value_time = now
 
     @property

@@ -128,7 +128,7 @@ class TrybatecAPI:
         except Exception as exc:
             raise APIError(f"devices API request failed: {exc}") from exc
 
-    async def get_data(self, device_id: str, fluid_id: int) -> list | None:
+    async def get_data(self, device_id: str, fluid_id: int) -> list:
         """Get last 24h data for a particular device."""
         try:
             # Make sure we have an auth token

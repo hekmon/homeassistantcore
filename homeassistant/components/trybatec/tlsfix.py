@@ -103,7 +103,6 @@ yOGBQMkKW+ESPMFgKuOXwIlCypTPRpgSabuY0MLTDXJLR27lk8QyKGOHQ+SwMj4K
         # Prepare SSL context
         self.ssl_ctx = ssl.create_default_context(
             purpose=ssl.Purpose.SERVER_AUTH,
-            # aiohttp does not use this store by default, but this is the one we can inject our intermediate into.
             # Fix for:
             # [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate
             cafile=self.custom_store_path,
