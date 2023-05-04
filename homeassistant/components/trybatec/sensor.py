@@ -121,10 +121,14 @@ class Consumption(SensorEntity):
         self._attr_unique_id = (
             f"{DOMAIN}_{config_id}_{device_info[DEVICE_PAYLOAD_NAME_CODE]}"
         )
+        clean_residence = device_info[DEVICE_PAYLOAD_RESIDENCE].rstrip()
         self._attr_device_info = DeviceInfo(
+            identifiers={
+                (DOMAIN, f"{clean_residence}_{device_info[DEVICE_PAYLOAD_SHARE]}")
+            },
             entry_type=DeviceEntryType.SERVICE,
             manufacturer=DOMAIN.capitalize(),
-            name=f"{device_info[DEVICE_PAYLOAD_RESIDENCE]} - Lot {device_info[DEVICE_PAYLOAD_SHARE]}",
+            name=f"{clean_residence} Lot {device_info[DEVICE_PAYLOAD_SHARE]}",
         )
         self._attr_entity_picture = generate_entity_picture(
             device_info[DEVICE_PAYLOAD_PICTURE]
@@ -162,6 +166,7 @@ class Consumption(SensorEntity):
         self._api = api
         self._device_id = device_info[DEVICE_PAYLOAD_ID]
         self._fluid_id = int(device_info[DEVICE_PAYLOAD_NAME_ID])
+        self._log_prefix = f"{clean_residence} Lot {device_info[DEVICE_PAYLOAD_SHARE]} - {device_info[DEVICE_PAYLOAD_NAME]}"
 
     async def async_update(self):
         """Update the value of the sensor from the API."""
@@ -170,12 +175,10 @@ class Consumption(SensorEntity):
             data = await self._api.get_data(self._device_id, self._fluid_id)
         except APIError as exc:
             _LOGGER.exception(
-                "%s: failed to recover data from API", self._attr_name, exc_info=exc
+                "%s: failed to recover data from API", self._log_prefix, exc_info=exc
             )
             return
-        _LOGGER.debug(
-            "got data for device %s (%s): %s", self._fluid_id, self._device_id, data
-        )
+        _LOGGER.debug("%s: %s", self._log_prefix, data)
         # Parse data
         self._attr_native_value = None
         self._attr_available = False
