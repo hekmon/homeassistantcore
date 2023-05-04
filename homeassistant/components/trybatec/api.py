@@ -46,6 +46,7 @@ class TrybatecAPI:
         self.housing_id: str | None = None
         self.token: str | None = None
         self.token_expire: datetime.datetime | None = None
+        self.real_images: bool = False
 
     async def _login(self) -> None:
         async with self.websession.post(

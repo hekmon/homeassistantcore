@@ -6,6 +6,7 @@ DOMAIN = "trybatec"
 # Config Flow
 CONFIG_USERNAME = "username"
 CONFIG_PASSWORD = "password"
+OPTION_REAL_IMAGES = "real_images"
 
 # API
 TRYBATEC_API_DOMAIN = "portail.trybatec.fr"

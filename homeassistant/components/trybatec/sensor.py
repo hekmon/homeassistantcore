@@ -36,11 +36,12 @@ from .const import (  # DEVICE_PAYLOAD_STATE,
     DEVICE_PAYLOAD_SN,
     DEVICE_PAYLOAD_TYPE,
     DOMAIN,
+    OPTION_REAL_IMAGES,
 )
 
 _LOGGER = logging.getLogger(__name__)
 
-SCAN_INTERVAL = datetime.timedelta(hours=3)
+SCAN_INTERVAL = datetime.timedelta(hours=1)
 
 
 class InvalidType(Exception):
@@ -98,6 +99,7 @@ async def async_setup_entry(
                 device[DEVICE_PAYLOAD_NAME_CODE],
                 device,
             )
+    config_entry.options.get(OPTION_REAL_IMAGES)
     # Add the sensors to HA
     async_add_entities(sensors, True)
 
@@ -128,9 +130,6 @@ class Consumption(SensorEntity):
             manufacturer=DOMAIN.capitalize(),
             model="Individualisation de la consommation",
             name=f"{clean_residence} Lot {device_info[DEVICE_PAYLOAD_SHARE]}",
-        )
-        self._attr_entity_picture = generate_entity_picture(
-            device_info[DEVICE_PAYLOAD_PICTURE]
         )
         self._attr_extra_state_attributes: dict[str, str] = {
             # "État du compteur": device_info[DEVICE_PAYLOAD_STATE],
@@ -165,6 +164,9 @@ class Consumption(SensorEntity):
         self._api = api
         self._device_id = device_info[DEVICE_PAYLOAD_ID]
         self._fluid_id = int(device_info[DEVICE_PAYLOAD_NAME_ID])
+        self._device_picture_url = generate_entity_picture(
+            device_info[DEVICE_PAYLOAD_PICTURE]
+        )
         self._log_prefix = f"{clean_residence} Lot {device_info[DEVICE_PAYLOAD_SHARE]} - {device_info[DEVICE_PAYLOAD_NAME]}"
 
     async def async_update(self):
@@ -181,6 +183,13 @@ class Consumption(SensorEntity):
         # Parse data
         self._attr_native_value = None
         self._attr_available = False
+
+    @property
+    def entity_picture(self) -> str | None:
+        """Picture URL of the entity."""
+        if self._api.real_images:
+            return self._device_picture_url
+        return None
 
 
 def cleanup_str(field: str) -> str:
