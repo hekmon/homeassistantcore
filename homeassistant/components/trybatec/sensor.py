@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import datetime
 import logging
+import string
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -121,13 +122,14 @@ class Consumption(SensorEntity):
         self._attr_unique_id = (
             f"{DOMAIN}_{config_id}_{device_info[DEVICE_PAYLOAD_NAME_CODE]}"
         )
-        clean_residence = device_info[DEVICE_PAYLOAD_RESIDENCE].rstrip()
+        clean_residence = cleanup_str(device_info[DEVICE_PAYLOAD_RESIDENCE])
         self._attr_device_info = DeviceInfo(
             identifiers={
                 (DOMAIN, f"{clean_residence}_{device_info[DEVICE_PAYLOAD_SHARE]}")
             },
             entry_type=DeviceEntryType.SERVICE,
             manufacturer=DOMAIN.capitalize(),
+            model="Individualisation de la consommation",
             name=f"{clean_residence} Lot {device_info[DEVICE_PAYLOAD_SHARE]}",
         )
         self._attr_entity_picture = generate_entity_picture(
@@ -182,3 +184,8 @@ class Consumption(SensorEntity):
         # Parse data
         self._attr_native_value = None
         self._attr_available = False
+
+
+def cleanup_str(field: str) -> str:
+    """Cleanup some str fields from API."""
+    return string.capwords(field.lower().rstrip().lstrip())
