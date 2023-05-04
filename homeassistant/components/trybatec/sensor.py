@@ -41,6 +41,7 @@ from .const import (  # DEVICE_PAYLOAD_STATE,
     DEVICE_PAYLOAD_SN,
     DEVICE_PAYLOAD_TYPE,
     DOMAIN,
+    FRANCE_TZ,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -172,12 +173,21 @@ class Consumption(SensorEntity):
         self._device_picture_url = generate_entity_picture(
             device_info[DEVICE_PAYLOAD_PICTURE]
         )
-        self._last_valid_value: datetime.datetime | None = None
+        self._last_valid_value_time: datetime.datetime | None = None
         self._log_prefix = f"{config_entry.title}: {clean_residence} Lot {device_info[DEVICE_PAYLOAD_SHARE]} - {device_info[DEVICE_PAYLOAD_NAME]}"
 
     async def async_update(self):
         """Update the value of the sensor from the API."""
-        # Get data
+        # Only update once a day
+        now = datetime.datetime.now(tz=FRANCE_TZ)
+        if self._last_valid_value_time is not None:
+            if now.date() == self._last_valid_value_time.date():
+                _LOGGER.debug(
+                    "%s: we already have data for today: skipping API update",
+                    self._log_prefix,
+                )
+                return
+        # Get data from API
         try:
             data = await self._api.get_data(self._device_id, self._fluid_id)
         except APIError as exc:
@@ -189,6 +199,7 @@ class Consumption(SensorEntity):
         # Parse data
         self._attr_native_value = None
         self._attr_available = False
+        # self._last_valid_value_time = now
 
     @property
     def entity_picture(self) -> str | None:

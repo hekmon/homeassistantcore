@@ -3,6 +3,8 @@ from zoneinfo import ZoneInfo
 
 DOMAIN = "trybatec"
 
+FRANCE_TZ = ZoneInfo("Europe/Paris")
+
 # Config Flow
 CONFIG_USERNAME = "username"
 CONFIG_PASSWORD = "password"
@@ -11,7 +13,6 @@ OPTION_REAL_IMAGES = "real_images"
 # API
 TRYBATEC_API_DOMAIN = "portail.trybatec.fr"
 USER_AGENT = "github.com/hekmon/ha-trybatec"
-FRANCE_TZ = ZoneInfo("Europe/Paris")
 DEVICE_PAYLOAD_ID = "id"
 DEVICE_PAYLOAD_NAME = "fluid"
 DEVICE_PAYLOAD_NAME_ID = "fluidId"
