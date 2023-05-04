@@ -6,6 +6,7 @@ import base64
 import datetime
 import json
 import logging
+import string
 
 import aiohttp
 
@@ -175,3 +176,8 @@ def generate_entity_picture(picture: str) -> str:
 def parse_iso_date(date: str) -> datetime.datetime:
     """Parse API ISO datetime as python datetime."""
     return datetime.datetime.fromisoformat(date).astimezone(FRANCE_TZ)
+
+
+def cleanup_str(field: str) -> str:
+    """Cleanup some str fields from API."""
+    return string.capwords(field.lower().rstrip().lstrip())

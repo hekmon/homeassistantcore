@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import datetime
 import logging
-import string
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -18,7 +17,13 @@ from homeassistant.helpers.device_registry import DeviceEntryType
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .api import APIError, TrybatecAPI, generate_entity_picture, parse_iso_date
+from .api import (
+    APIError,
+    TrybatecAPI,
+    cleanup_str,
+    generate_entity_picture,
+    parse_iso_date,
+)
 from .const import (  # DEVICE_PAYLOAD_STATE,
     DEVICE_PAYLOAD_ACTIVATION_DATE,
     DEVICE_PAYLOAD_EMIT_SN,
@@ -36,7 +41,6 @@ from .const import (  # DEVICE_PAYLOAD_STATE,
     DEVICE_PAYLOAD_SN,
     DEVICE_PAYLOAD_TYPE,
     DOMAIN,
-    OPTION_REAL_IMAGES,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -72,12 +76,12 @@ async def async_setup_entry(
     # Fetch available devices
     try:
         devices = await api.get_devices()
-        _LOGGER.debug("%s: recovered %d devices", config_entry.title, len(devices))
+        _LOGGER.info("%s: recovered %d devices", config_entry.title, len(devices))
     except APIError as exc:
         _LOGGER.exception(
-            "%s: can not init sensors: failed to get devices",
+            "%s: can not init sensors: failed to get devices: %s",
             config_entry.title,
-            exc_info=exc,
+            exc,
         )
         return
     # Build sensors
@@ -85,21 +89,22 @@ async def async_setup_entry(
     for device in devices:
         try:
             sensors.append(
-                Consumption(
-                    device_info=device, config_id=config_entry.entry_id, api=api
-                )
+                Consumption(device_info=device, config_entry=config_entry, api=api)
             )
         except KeyError as exc:
             _LOGGER.exception(
-                "Failed to add device as sensor: %s", device, exc_info=exc
+                "%s: failed to add device as sensor (KeyError '%s'): %s",
+                config_entry.title,
+                exc,
+                device,
             )
         except InvalidType:
             _LOGGER.warning(
-                "Failed to add device as sensor (unknown type %s): %s",
+                "%s: failed to add device as sensor (unknown type '%s'): %s",
+                config_entry.title,
                 device[DEVICE_PAYLOAD_NAME_CODE],
                 device,
             )
-    config_entry.options.get(OPTION_REAL_IMAGES)
     # Add the sensors to HA
     async_add_entities(sensors, True)
 
@@ -113,13 +118,13 @@ class Consumption(SensorEntity):
     _attr_state_class = SensorStateClass.TOTAL_INCREASING
 
     def __init__(
-        self, device_info: dict[str, str], config_id: str, api: TrybatecAPI
+        self, device_info: dict[str, str], config_entry: ConfigEntry, api: TrybatecAPI
     ) -> None:
         """Initialize the Cold Water Sensor Entity."""
         # Generic properties
         self._attr_name = device_info[DEVICE_PAYLOAD_NAME]
         self._attr_unique_id = (
-            f"{DOMAIN}_{config_id}_{device_info[DEVICE_PAYLOAD_NAME_CODE]}"
+            f"{DOMAIN}_{config_entry.entry_id}_{device_info[DEVICE_PAYLOAD_NAME_CODE]}"
         )
         clean_residence = cleanup_str(device_info[DEVICE_PAYLOAD_RESIDENCE])
         self._attr_device_info = DeviceInfo(
@@ -158,7 +163,7 @@ class Consumption(SensorEntity):
             self._attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
         else:
             raise InvalidType(
-                f"unexpected fluid code {device_info[DEVICE_PAYLOAD_NAME_CODE]}"
+                f"unexpected fluid code '{device_info[DEVICE_PAYLOAD_NAME_CODE]}'"
             )
         # Custom entity properties
         self._api = api
@@ -167,7 +172,8 @@ class Consumption(SensorEntity):
         self._device_picture_url = generate_entity_picture(
             device_info[DEVICE_PAYLOAD_PICTURE]
         )
-        self._log_prefix = f"{clean_residence} Lot {device_info[DEVICE_PAYLOAD_SHARE]} - {device_info[DEVICE_PAYLOAD_NAME]}"
+        self._last_valid_value: datetime.datetime | None = None
+        self._log_prefix = f"{config_entry.title}: {clean_residence} Lot {device_info[DEVICE_PAYLOAD_SHARE]} - {device_info[DEVICE_PAYLOAD_NAME]}"
 
     async def async_update(self):
         """Update the value of the sensor from the API."""
@@ -176,10 +182,10 @@ class Consumption(SensorEntity):
             data = await self._api.get_data(self._device_id, self._fluid_id)
         except APIError as exc:
             _LOGGER.exception(
-                "%s: failed to recover data from API", self._log_prefix, exc_info=exc
+                "%s: failed to recover data from API: %s", self._log_prefix, exc
             )
             return
-        _LOGGER.debug("%s: %s", self._log_prefix, data)
+        _LOGGER.debug("%s: recovered data: %s", self._log_prefix, data)
         # Parse data
         self._attr_native_value = None
         self._attr_available = False
@@ -190,8 +196,3 @@ class Consumption(SensorEntity):
         if self._api.real_images:
             return self._device_picture_url
         return None
-
-
-def cleanup_str(field: str) -> str:
-    """Cleanup some str fields from API."""
-    return string.capwords(field.lower().rstrip().lstrip())
