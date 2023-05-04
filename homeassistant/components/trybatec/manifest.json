@@ -1,0 +1,10 @@
+{
+  "domain": "trybatec",
+  "name": "Trybatec",
+  "codeowners": ["@hekmon"],
+  "config_flow": true,
+  "documentation": "https://github.com/hekmon/ha-trybatec",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/hekmon/ha-trybatec/issues",
+  "requirements": ["certifi==2022.9.24", "pyOpenSSL==23.1.0"]
+}

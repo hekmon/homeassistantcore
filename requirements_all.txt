@@ -513,6 +513,9 @@ buienradar==1.0.5
 # homeassistant.components.caldav
 caldav==1.2.0
 
+# homeassistant.components.trybatec
+certifi==2022.9.24
+
 # homeassistant.components.circuit
 circuit-webhook==1.0.1
 
@@ -1467,6 +1470,9 @@ pyMetEireann==2021.8.0
 # homeassistant.components.met
 # homeassistant.components.norway_air
 pyMetno==0.9.0
+
+# homeassistant.components.trybatec
+pyOpenSSL==23.1.0
 
 # homeassistant.components.rfxtrx
 pyRFXtrx==0.30.1
