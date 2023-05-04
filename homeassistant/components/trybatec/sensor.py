@@ -83,30 +83,27 @@ async def async_setup_entry(
     sensors = []
     for device in devices:
         try:
-            if device[DEVICE_PAYLOAD_NAME_CODE] in [
-                DEVICE_PAYLOAD_NAME_CODE_COLDWATER,
-                DEVICE_PAYLOAD_NAME_CODE_HOTWATER,
-                DEVICE_PAYLOAD_NAME_CODE_HEAT,
-            ]:
-                sensors.append(
-                    Consumption(
-                        device_info=device, config_id=config_entry.entry_id, api=api
-                    )
+            sensors.append(
+                Consumption(
+                    device_info=device, config_id=config_entry.entry_id, api=api
                 )
-            else:
-                _LOGGER.warning(
-                    "Unknown device type %d: skipping", device[DEVICE_PAYLOAD_NAME_CODE]
-                )
+            )
         except KeyError as exc:
             _LOGGER.exception(
                 "Failed to add device as sensor: %s", device, exc_info=exc
+            )
+        except InvalidType:
+            _LOGGER.warning(
+                "Failed to add device as sensor (unknown type %s): %s",
+                device[DEVICE_PAYLOAD_NAME_CODE],
+                device,
             )
     # Add the sensors to HA
     async_add_entities(sensors, True)
 
 
 class Consumption(SensorEntity):
-    """Cold Water Sensor Entity."""
+    """Consumption Sensor Entity."""
 
     # Generic properties
     _attr_has_entity_name = True
