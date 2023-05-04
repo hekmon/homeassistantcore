@@ -10,7 +10,7 @@ from homeassistant.core import Event, HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .api import TrybatecAPI
-from .const import CONFIG_PASSWORD, CONFIG_USERNAME, DOMAIN, OPTION_REAL_IMAGES
+from .const import CONFIG_PASSWORD, CONFIG_USERNAME, DOMAIN
 
 PLATFORMS: list[Platform] = [Platform.SENSOR]
 
@@ -25,9 +25,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         username=str(entry.data.get(CONFIG_USERNAME)),
         password=str(entry.data.get(CONFIG_PASSWORD)),
     )
-    api.real_images = bool(entry.options.get(OPTION_REAL_IMAGES))
     hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, api.cleanup)
-    entry.async_on_unload(entry.add_update_listener(update_listener))
     # Save the API controller for sensors
     try:
         hass.data[DOMAIN][entry.entry_id] = api
@@ -46,19 +44,3 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         api: TrybatecAPI = hass.data[DOMAIN].pop(entry.entry_id)
         api.cleanup(Event("unload_entry"))
     return unload_ok
-
-
-async def update_listener(hass: HomeAssistant, entry: ConfigEntry):
-    """Handle options update."""
-    # Retrieved the serial reader for this config entry
-    try:
-        api: TrybatecAPI = hass.data[DOMAIN][entry.entry_id]
-    except KeyError:
-        _LOGGER.error(
-            "Can not update options for %s: failed to get the API object",
-            entry.title,
-        )
-        return
-    # Update its options
-    api.real_images = bool(entry.options.get(OPTION_REAL_IMAGES))
-    _LOGGER.debug("%s: usage of real images set to %s", entry.title, api.real_images)

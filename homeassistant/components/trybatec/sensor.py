@@ -42,6 +42,7 @@ from .const import (  # DEVICE_PAYLOAD_STATE,
     DEVICE_PAYLOAD_TYPE,
     DOMAIN,
     FRANCE_TZ,
+    OPTION_REAL_IMAGES,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -167,6 +168,7 @@ class Consumption(SensorEntity):
                 f"unexpected fluid code '{device_info[DEVICE_PAYLOAD_NAME_CODE]}'"
             )
         # Custom entity properties
+        self._config_entry = config_entry
         self._api = api
         self._device_id = device_info[DEVICE_PAYLOAD_ID]
         self._fluid_id = int(device_info[DEVICE_PAYLOAD_NAME_ID])
@@ -215,6 +217,6 @@ class Consumption(SensorEntity):
     @property
     def entity_picture(self) -> str | None:
         """Picture URL of the entity."""
-        if self._api.real_images:
+        if self._config_entry.options.get(OPTION_REAL_IMAGES):
             return self._device_picture_url
         return None
