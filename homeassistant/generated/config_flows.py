@@ -462,6 +462,7 @@ FLOWS = {
         "trafikverket_train",
         "trafikverket_weatherstation",
         "transmission",
+        "trybatec",
         "tuya",
         "twentemilieu",
         "twilio",
