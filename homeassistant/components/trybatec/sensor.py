@@ -21,12 +21,14 @@ from .api import APIError, TrybatecAPI, generate_entity_picture, parse_iso_date
 from .const import (  # DEVICE_PAYLOAD_STATE,
     DEVICE_PAYLOAD_ACTIVATION_DATE,
     DEVICE_PAYLOAD_EMIT_SN,
+    DEVICE_PAYLOAD_ID,
     DEVICE_PAYLOAD_LOCALISATION,
     DEVICE_PAYLOAD_NAME,
     DEVICE_PAYLOAD_NAME_CODE,
     DEVICE_PAYLOAD_NAME_CODE_COLDWATER,
     DEVICE_PAYLOAD_NAME_CODE_HEAT,
     DEVICE_PAYLOAD_NAME_CODE_HOTWATER,
+    DEVICE_PAYLOAD_NAME_ID,
     DEVICE_PAYLOAD_PICTURE,
     DEVICE_PAYLOAD_RESIDENCE,
     DEVICE_PAYLOAD_SHARE,
@@ -158,8 +160,8 @@ class Consumption(SensorEntity):
             )
         # Custom entity properties
         self._api = api
-        self._device_id = device_info["todo"]
-        self._fluid_id = int(device_info["todo"])
+        self._device_id = device_info[DEVICE_PAYLOAD_ID]
+        self._fluid_id = int(device_info[DEVICE_PAYLOAD_NAME_ID])
 
     async def async_update(self):
         """Update the value of the sensor from the API."""

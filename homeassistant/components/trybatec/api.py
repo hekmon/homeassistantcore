@@ -70,7 +70,7 @@ class TrybatecAPI:
                 token_infos_b64 = self.token.split(".")[1]
                 token_infos_json = base64.b64decode(token_infos_b64)
                 token_infos = json.loads(token_infos_json)
-                token_expire_timestamp = token_infos["exc"]
+                token_expire_timestamp = token_infos["exp"]
                 self.token_expire = datetime.datetime.fromtimestamp(
                     token_expire_timestamp, tz=datetime.timezone.utc
                 )
@@ -79,7 +79,7 @@ class TrybatecAPI:
                 self.token = None
                 self.token_expire = None
                 raise APIError(
-                    "extracting logging information from authentication response payload failed"
+                    f"extracting logging information from authentication response payload failed with index or key error: {exc}"
                 ) from exc
 
     async def _refresh_token(self) -> None:
@@ -122,7 +122,7 @@ class TrybatecAPI:
                 ), f"getting devices failed with status code {resp.status}"
                 return await resp.json()
         except Exception as exc:
-            raise APIError("devices API request failed") from exc
+            raise APIError(f"devices API request failed: {exc}") from exc
 
     async def get_data(self, device_id: str, fluid_id: int) -> list | None:
         """Get last 24h data for a particular device."""
@@ -154,14 +154,14 @@ class TrybatecAPI:
                 ), f"getting consumption failed with status code {resp.status}"
                 return await resp.json()
         except Exception as exc:
-            raise APIError("consumption data API request failed") from exc
+            raise APIError(f"consumption data API request failed: {exc}") from exc
 
     async def test_login(self) -> None:
         """Test if login with provided credentials works."""
         try:
             await self._refresh_token()
         except Exception as exc:
-            raise APIError("login failed") from exc
+            raise APIError(f"login failed: {exc}") from exc
 
 
 def generate_entity_picture(picture: str) -> str:
