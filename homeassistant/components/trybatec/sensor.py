@@ -39,7 +39,7 @@ from .const import (  # DEVICE_PAYLOAD_STATE,
 
 _LOGGER = logging.getLogger(__name__)
 
-SCAN_INTERVAL = datetime.timedelta(hours=1)
+SCAN_INTERVAL = datetime.timedelta(hours=3)
 
 
 class InvalidType(Exception):
