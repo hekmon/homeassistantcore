@@ -7,7 +7,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EVENT_HOMEASSISTANT_STOP, Platform
 from homeassistant.core import HomeAssistant
 
-from .const import (  # config flow; legacy
+from .const import (
     DOMAIN,
     OPTIONS_REALTIME,
     SETUP_SERIAL,
@@ -42,7 +42,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     except KeyError:
         hass.data[DOMAIN] = {}
         hass.data[DOMAIN][entry.entry_id] = serial_reader
-    hass.config_entries.async_setup_platforms(entry, PLATFORMS)
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     return True
 
