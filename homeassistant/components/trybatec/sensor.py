@@ -140,7 +140,7 @@ class Consumption(SensorEntity):
         )
         self._attr_extra_state_attributes: dict[str, str] = {
             # "État du compteur": device_info[DEVICE_PAYLOAD_STATE],
-            "Localisation": device_info[DEVICE_PAYLOAD_LOCALISATION],
+            "Localisation": cleanup_str(device_info[DEVICE_PAYLOAD_LOCALISATION]),
             "Type de compteur": device_info[DEVICE_PAYLOAD_TYPE],
             "N° de série": device_info[DEVICE_PAYLOAD_SN],
             "N° de série émetteur": device_info[DEVICE_PAYLOAD_EMIT_SN],
