@@ -342,8 +342,10 @@ class LinkyTICReader(threading.Thread):
                 value,
                 sum1,
                 truncated,
-                0,  # fake computed checksum to avoid type error on ord()
-                checksum,
+                computed_checksum,
+                bytes(
+                    "0", encoding="ascii"
+                ),  # fake expected checksum to avoid type error on ord()
             ) from exc
 
 
