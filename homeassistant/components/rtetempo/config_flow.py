@@ -47,8 +47,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         try:
             client_id = user_input[CONFIG_CLIENT_ID]
             client_secret = user_input[CONFIG_CLIEND_SECRET]
-            hass = HomeAssistant()
-            await hass.async_add_executor_job(
+            await self.hass.async_add_executor_job(
                 lambda: application_tester(str(client_id), str(client_secret))
             )
         except RequestException as request_exception:
