@@ -9,7 +9,7 @@ from requests.exceptions import RequestException
 import voluptuous as vol
 
 from homeassistant import config_entries
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
 
 from .api_worker import BadRequest, ServerError, UnexpectedError, application_tester
